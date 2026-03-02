@@ -10,13 +10,13 @@ Template::Template(std::vector<double> c, std::vector<double> w) {
 
   for (int i = 0; i < c.size(); i++) {
     centers[i] = Template::congru(c[i]);
-    widths[i] = Template::congru(w[i]);
+    widths[i] = std::abs(w[i]);
   }
 }
 
 Template::Template(double c, double w) {
   centers = {Template::congru(c)};
-  widths = {Template::congru(w)};
+  widths = {std::abs(w)};
 }
 
 Template::Template(Template_format format) {
@@ -66,6 +66,13 @@ const double Template::get_widths(int n) const { return widths[n]; }
 const std::vector<double> Template::get_center() const { return centers; }
 const std::vector<double> Template::get_widths() const { return widths; }
 
+void Template::autoCongru() {
+  for (int i = 0; i < centers.size(); i++) {
+    centers[i] = congru(centers[i]);
+    widths[i] = congru(widths[i]);
+  }
+}
+
 double Template::congru(double angle) {
   double pi2 = 2 * M_PI;
   double rest = angle - double(int(angle / pi2)) * pi2;
@@ -76,4 +83,38 @@ double Template::congru(double angle) {
 void Template::rotate(double angle) {
   for (int i = 0; i < centers.size(); i++)
     centers[i] = Template::congru(centers[i] + angle);
+}
+
+bool Template::isInsideSector(double hue, int n) const {
+  double diff = std::abs(congru(hue - centers[n]));
+  return diff <= widths[n] / 2.0;
+}
+
+double Template::distanceToTemplate(double hue) const {
+  double minDist = 2 * M_PI;
+
+  for (int n = 0; n < get_nbSector(); n++) {
+    if (isInsideSector(hue, n))
+      return 0.0;
+
+    double LeftBorder = centers[n] - widths[n] / 2.0;
+    double RightBorder = centers[n] + widths[n] / 2.0;
+
+    double distLeft = std::abs(congru(hue - LeftBorder));
+    double distRight = std::abs(congru(hue - RightBorder));
+
+    minDist = std::min(minDist, std::min(distLeft, distRight));
+  }
+
+  return minDist;
+}
+
+double Template::F(const Image &image) const {
+  double total = 0.0;
+  for (const Pixel &p : image.get_img()) {
+    double h, s, v;
+    p.toHSV(h, s, v);
+    total += distanceToTemplate(h) * s;
+  }
+  return total;
 }

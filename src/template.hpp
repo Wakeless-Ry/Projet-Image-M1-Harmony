@@ -1,6 +1,7 @@
 #ifndef TEMPLATE
 #define TEMPLATE
 
+#include "image.hpp"
 #include <cmath>
 #include <vector>
 
@@ -32,6 +33,10 @@ public:
   void rotate(double angle);
 
   static double congru(double angle);
+
+  double distanceToTemplate(double hue) const;
+  bool isInsideSector(double hue, int sectorIndex) const;
+  double F(const Image &image) const;
 };
 
 #endif
