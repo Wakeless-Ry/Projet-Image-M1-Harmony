@@ -6,6 +6,7 @@ add_executable(ProjetImage
     main.cpp
     src/image.cpp
     src/template.cpp
+    common/stb_image.cpp
 )
 
 target_compile_features(ProjetImage PRIVATE cxx_std_17)
