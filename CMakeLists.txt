@@ -1,17 +1,49 @@
 cmake_minimum_required(VERSION 3.16)
+project(ProjetImageHarmony)
 
-project(ProjetImageHarmony VERSION 1.0 LANGUAGES CXX)
+find_package(OpenGL REQUIRED)
+
+add_subdirectory(external)
+
+include_directories(
+    external
+    external/imgui
+    external/glfw-3.1.2/include
+    external/glew-1.13.0/include
+    src
+    common
+)
+
+set(IMGUI_SRC
+    external/imgui/imgui.cpp
+    external/imgui/imgui_draw.cpp
+    external/imgui/imgui_tables.cpp
+    external/imgui/imgui_widgets.cpp
+    external/imgui/imgui_impl_glfw.cpp
+    external/imgui/imgui_impl_opengl3.cpp
+)
+
+set(ALL_LIBS
+    ${OPENGL_LIBRARY}
+    glfw
+    GLEW_1130
+)
 
 add_executable(ProjetImage
     main.cpp
     src/image.cpp
     src/template.cpp
+    src/color_harmo.cpp
+    src/interface.cpp
     common/stb_image.cpp
+    ${IMGUI_SRC}
 )
 
-target_compile_features(ProjetImage PRIVATE cxx_std_17)
+target_link_libraries(ProjetImage
+    ${ALL_LIBS}
+)
 
-target_include_directories(ProjetImage PRIVATE
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/common
+add_definitions(
+    -DGLEW_STATIC
+    -D_CRT_SECURE_NO_WARNINGS
 )

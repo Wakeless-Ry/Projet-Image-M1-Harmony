@@ -4,13 +4,31 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/external/glm-0.9.7.1"
+                "${workspaceFolder}/external/imgui",
+                "${workspaceFolder}/external/glfw-3.1.2/include",
+                "${workspaceFolder}/external/glew-1.13.0/include",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/common"
             ],
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
+            "defines": [
+                "GLEW_STATIC",
+                "_CRT_SECURE_NO_WARNINGS"
+            ],
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64"
+            "intelliSenseMode": "linux-gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "${workspaceFolder}/external/imgui",
+                    "${workspaceFolder}/external/glfw-3.1.2/include",
+                    "${workspaceFolder}/external/glew-1.13.0/include",
+                    "${workspaceFolder}/src",
+                    "${workspaceFolder}/common"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

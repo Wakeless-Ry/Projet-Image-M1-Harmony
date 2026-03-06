@@ -100,6 +100,9 @@ public:
   const int get_width() const;
   const int get_height() const;
   const std::vector<Pixel> get_img() const;
+
+  std::vector<Pixel>::const_iterator begin() const;
+  std::vector<Pixel>::const_iterator end() const;
 };
 
 #endif
