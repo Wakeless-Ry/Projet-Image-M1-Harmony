@@ -33,6 +33,8 @@ Image::Image(const std::string path) {
 }
 
 Image::Image(const std::vector<unsigned char> &buffer, int width, int height) {
+  this->width = width;
+  this->height = height;
   this->nb_pixels = width * height;
   if (buffer.size() != this->nb_pixels * 3)
     throw std::runtime_error("Taille du buffer incorrecte");

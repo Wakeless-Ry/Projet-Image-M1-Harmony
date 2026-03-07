@@ -9,7 +9,7 @@ double gaussien(double esp, double st_dev, double x) {
   return exp(pow((x-esp)/st_dev, 2.0)/-2.0) / (st_dev*sqrt(2.0*M_PI));
 }
 
-Image projectPixels(Image & imIn, Template temp, std::vector<int> & sectorTarget)
+Image projectPixels(Image & imIn, Template & temp, std::vector<int> & sectorTarget)
 {
   if (sectorTarget.size() != imIn.get_nb_pixels()) throw std::runtime_error("Buffer doit avoir la même taille que image");
   std::vector<Pixel> dataIn = imIn.get_img();
@@ -23,7 +23,7 @@ Image projectPixels(Image & imIn, Template temp, std::vector<int> & sectorTarget
     double w2 = temp.get_widths(sectorTarget[p])/2.0;
     double dist = Template::congru(h-Cp);
     double sens = (dist > 0)*2-1;
-    h2 = Cp + sens*w2*(1.0-gaussien(0.0, w2, dist));
+    h2 = Cp + /*sens**/w2*(1.0-gaussien(0.0, w2, dist));
     Pixel pix = Pixel::toRGB(h2, s, v);
     dataOut[3*p] = pix.r;
     dataOut[3*p+1] = pix.g;
@@ -34,6 +34,12 @@ Image projectPixels(Image & imIn, Template temp, std::vector<int> & sectorTarget
 }
 
 int main() {
+  Image imIn("../assets/img/peacock.jpg");
+  Template temp(i);
+  std::vector<int> sectorTarget(imIn.get_nb_pixels(), 0);
+  Image imOut = projectPixels(imIn, temp, sectorTarget);
+  imOut.write_ppm("../assets/out/peacock_red_withoutSens.ppm");
+
   // Pixel p(255, 0, 0);
   // double h, s, v;
   // p.toHSV(h, s, v);
@@ -66,10 +72,10 @@ int main() {
   // std::cout << "Best template: " << format << "\n";
   // std::cout << "Best angle: " << angle << "\n";
 
-  double angle = 2.64522;
-  std::cout << "Degrees: " << angle * 180.0 / M_PI << "\n";
+  // double angle = 2.64522;
+  // std::cout << "Degrees: " << angle * 180.0 / M_PI << "\n";
 
-  Pixel color = Pixel::toRGB(angle, 1.0, 1.0);
-  std::cout << "Color: r=" << (int)color.r << " g=" << (int)color.g
-            << " b=" << (int)color.b << "\n";
+  // Pixel color = Pixel::toRGB(angle, 1.0, 1.0);
+  // std::cout << "Color: r=" << (int)color.r << " g=" << (int)color.g
+  //           << " b=" << (int)color.b << "\n";
 }
