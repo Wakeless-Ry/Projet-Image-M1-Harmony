@@ -99,6 +99,7 @@ public:
 
   const int get_width() const;
   const int get_height() const;
+  const int get_nb_pixels() const;
   const std::vector<Pixel> get_img() const;
 };
 

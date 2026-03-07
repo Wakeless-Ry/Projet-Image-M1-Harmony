@@ -1,6 +1,37 @@
 #include "src/image.hpp"
 #include "src/template.hpp"
 #include <iostream>
+#include <stdexcept>
+#include <vector>
+#include <cmath>
+
+double gaussien(double esp, double st_dev, double x) {
+  return exp(pow((x-esp)/st_dev, 2.0)/-2.0) / (st_dev*sqrt(2.0*M_PI));
+}
+
+Image projectPixels(Image & imIn, Template temp, std::vector<int> & sectorTarget)
+{
+  if (sectorTarget.size() != imIn.get_nb_pixels()) throw std::runtime_error("Buffer doit avoir la même taille que image");
+  std::vector<Pixel> dataIn = imIn.get_img();
+  std::vector<unsigned char> dataOut;
+  dataOut.resize(sectorTarget.size()*3);
+  for (int p=0 ; p<sectorTarget.size() ; p++)
+  {
+    double h, s, v, h2;
+    dataIn[p].toHSV(h, s, v);
+    double Cp = temp.get_center(sectorTarget[p]);
+    double w2 = temp.get_widths(sectorTarget[p])/2.0;
+    double dist = Template::congru(h-Cp);
+    double sens = (dist > 0)*2-1;
+    h2 = Cp + sens*w2*(1.0-gaussien(0.0, w2, dist));
+    Pixel pix = Pixel::toRGB(h2, s, v);
+    dataOut[3*p] = pix.r;
+    dataOut[3*p+1] = pix.g;
+    dataOut[3*p+2] = pix.b;
+  }
+  Image imOut = Image(dataOut, imIn.get_width(), imIn.get_height());
+  return imOut;
+}
 
 int main() {
   // Pixel p(255, 0, 0);
