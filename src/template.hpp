@@ -37,8 +37,9 @@ public:
   double distanceToTemplate(double hue) const;
   bool isInsideSector(double hue, int sectorIndex) const;
   double F(const Image &image) const;
-  double bestOrientation(const Image &image,
-                         int steps = 1000) const; // M(X,Tm) dans le papier
+  // double bestOrientation(const Image &image,
+  //                        int steps = 1000) const; // M(X,Tm) dans le papier
+  double bestOrientation(const Image &image) const; // M(X,Tm) dans le papier
   static std::pair<Template_format, double>
   bestTemplate(const Image &image); // B(X)
 };

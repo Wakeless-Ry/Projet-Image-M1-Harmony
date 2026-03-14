@@ -27,15 +27,14 @@ int main() {
   //           << t.distanceToTemplate(M_PI / 2.0) << "\n";
 
   // Image img("../assets/img/baboon.ppm");
-  // Image img("../assets/img/peacock.jpg");
+  Image img("../assets/img/peacock.jpg");
   // std::cout << "F(I-template): " << t.F(img) << "\n";
 
-  // auto [format, angle] = Template::bestTemplate(img);
+  auto [format, angle] = Template::bestTemplate(img);
 
-  // std::cout << "Best template: " << format << "\n";
-  // std::cout << "Best angle: " << angle << "\n";
+  std::cout << "Best template: " << format << "\n";
+  std::cout << "Best angle: " << angle << "\n";
 
-  double angle = 2.64522;
   std::cout << "Degrees: " << angle * 180.0 / M_PI << "\n";
 
   Pixel color = Pixel::toRGB(angle, 1.0, 1.0);

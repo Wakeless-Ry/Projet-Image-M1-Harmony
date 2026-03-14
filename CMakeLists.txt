@@ -15,3 +15,6 @@ target_include_directories(ProjetImage PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/common
 )
+
+find_package(OpenMP REQUIRED)
+target_link_libraries(ProjetImage OpenMP::OpenMP_CXX)

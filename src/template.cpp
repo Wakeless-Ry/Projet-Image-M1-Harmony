@@ -1,5 +1,7 @@
 #include "template.hpp"
+#include <omp.h>
 #include <stdexcept>
+
 Template::Template(std::vector<double> c, std::vector<double> w) {
   if (c.size() != w.size())
     throw std::runtime_error("Il doit y avoir autant de centre de secteur que "
@@ -119,24 +121,113 @@ double Template::F(const Image &image) const {
   return total;
 }
 
-double Template::bestOrientation(const Image &image, int steps) const {
-  double best_angle = 0.0;
-  double best_F = std::numeric_limits<double>::max();
+// double Template::bestOrientation(const Image &image, int steps) const {
+//   double best_angle = 0.0;
+//   double best_F = std::numeric_limits<double>::max();
 
-  for (int i = 0; i < steps; i++) {
-    double angle = 2.0 * M_PI * i / steps;
+//   #pragma omp parallel for
+//   for (int i = 0; i < steps; i++) {
+//     double angle = 2.0 * M_PI * i / steps;
 
-    Template t = *this;
-    t.rotate(angle);
+//     Template t = *this;
+//     t.rotate(angle);
 
-    double f = t.F(image);
-    if (f < best_F) {
-      best_F = f;
-      best_angle = angle;
+//     double f = t.F(image);
+
+//     #pragma omp critical
+//     if (f < best_F) {
+//       best_F = f;
+//       best_angle = angle;
+//     }
+//   }
+
+//   return best_angle;
+// }
+
+double Template::bestOrientation(const Image &image) const {
+  const double golden = 0.3819660;
+  const double tol = 1e-4;
+  double a = 0.0, b = 2 * M_PI;
+
+  double x = a + golden * (b - a);
+  double w = x, v = x;
+
+  Template tx = *this;
+  tx.rotate(x);
+  double fx = tx.F(image);
+  double fw = fx, fv = fx;
+
+  double d = 0.0, e = 0.0;
+
+  for (int iter = 0; iter < 100; iter++) {
+    double midpoint = 0.5 * (a + b);
+    double tol1 = tol * std::abs(x) + 1e-10;
+    double tol2 = 2.0 * tol1;
+
+    if (std::abs(x - midpoint) <= tol2 - 0.5 * (b - a))
+      break;
+
+    bool parabolic_ok = false;
+    double u;
+
+    if (std::abs(e) > tol1) {
+      double r = (x - w) * (fx - fv);
+      double q = (x - v) * (fx - fw);
+      double p = (x - v) * q - (x - w) * r;
+      q = 2.0 * (q - r);
+      if (q > 0)
+        p = -p;
+      q = std::abs(q);
+      r = e;
+      e = d;
+
+      if (std::abs(p) < std::abs(0.5 * q * r) && p > q * (a - x) &&
+          p < q * (b - x)) {
+        d = p / q;
+        u = x + d;
+        parabolic_ok = true;
+      }
+    }
+
+    if (!parabolic_ok) {
+      e = (x < midpoint) ? b - x : a - x;
+      d = golden * e;
+    }
+
+    u = x + d;
+    Template tu = *this;
+    tu.rotate(u);
+    double fu = tu.F(image);
+
+    if (fu <= fx) {
+      if (u < x)
+        b = x;
+      else
+        a = x;
+      v = w;
+      fv = fw;
+      w = x;
+      fw = fx;
+      x = u;
+      fx = fu;
+    } else {
+      if (u < x)
+        a = u;
+      else
+        b = u;
+      if (fu <= fw || w == x) {
+        v = w;
+        fv = fw;
+        w = u;
+        fw = fu;
+      } else if (fu <= fv || v == x || v == w) {
+        v = u;
+        fv = fu;
+      }
     }
   }
 
-  return best_angle;
+  return x;
 }
 
 std::pair<Template_format, double> Template::bestTemplate(const Image &image) {
