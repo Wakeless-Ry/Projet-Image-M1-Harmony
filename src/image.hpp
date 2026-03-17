@@ -107,11 +107,7 @@ class Image
   		void histogram(const std::string name) const;
   		void histogram_one_channel(const std::string name, char channel) const;
 
-  const int get_width() const;
-  const int get_height() const;
-  const int get_nb_pixels() const;
-  const std::vector<Pixel> get_img() const;
-};
+  		const int get_nb_pixels() const;
   		const int get_width() const;
   		const int get_height() const;
   		const std::vector<Pixel>& get_img() const;

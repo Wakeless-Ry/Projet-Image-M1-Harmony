@@ -1,12 +1,6 @@
-#include "interface.hpp"
-#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 
 #include "interface.hpp"
 #include "src/image.hpp"
@@ -15,6 +9,12 @@
 #include <stdexcept>
 #include <vector>
 #include <cmath>
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+static bool show_imgui = true;
+static bool space_pressed = false;
 
 double gaussien(double esp, double st_dev, double x) {
   return exp(pow((x-esp)/st_dev, 2.0)/-2.0) / (st_dev*sqrt(2.0*M_PI));
@@ -61,61 +61,6 @@ Image projectPixels(Image & imIn, Template & temp, std::vector<int> & V)
   return imOut;
 }
 
-int main() {
-  Image imIn("../assets/img/peacock.jpg");
-  Template temp(i);
-  std::vector<int> sectorTarget(imIn.get_nb_pixels(), 0);
-  Image imOut = projectPixels(imIn, temp, sectorTarget);
-  imOut.write_ppm("../assets/out/peacock_red_withoutSens.ppm");
-
-  // Pixel p(255, 0, 0);
-  // double h, s, v;
-  // p.toHSV(h, s, v);
-  // std::cout << "Red HSV: h=" << h << " s=" << s << " v=" << v << "\n";
-
-  // Pixel tmp = Pixel::toRGB(h, s, v);
-  // std::cout << "retour vers RGB: r=" << (int)tmp.r << " g=" << (int)tmp.g
-  //           << " b=" << (int)tmp.b << "\n";
-
-  // Template t(Template_format::I);
-  // std::cout << "I-template sectors: " << t.get_nbSector() << "\n";
-  // std::cout << "center0=" << t.get_center(0) << " width0=" << t.get_widths(0)
-  //           << "\n";
-  // std::cout << "center1=" << t.get_center(1) << " width1=" << t.get_widths(1)
-  //           << "\n";
-
-  // std::cout << "Distance of h=0 (inside sector): " <<
-  // t.distanceToTemplate(0.0)
-  //           << "\n";
-
-  // std::cout << "Distance of h=π/2 (outside): "
-  //           << t.distanceToTemplate(M_PI / 2.0) << "\n";
-
-  // Image img("../assets/img/baboon.ppm");
-  // Image img("../assets/img/peacock.jpg");
-  // std::cout << "F(I-template): " << t.F(img) << "\n";
-
-  // auto [format, angle] = Template::bestTemplate(img);
-
-  // std::cout << "Best template: " << format << "\n";
-  // std::cout << "Best angle: " << angle << "\n";
-
-  // double angle = 2.64522;
-  // std::cout << "Degrees: " << angle * 180.0 / M_PI << "\n";
-
-  // Pixel color = Pixel::toRGB(angle, 1.0, 1.0);
-  // std::cout << "Color: r=" << (int)color.r << " g=" << (int)color.g
-  //           << " b=" << (int)color.b << "\n";
-#include "template.hpp"
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <stb_image.h>
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-static bool show_imgui = true;
-static bool space_pressed = false;
 
 std::vector<Pixel> algo_color_harmonization(std::string& img_path, double lambda)
 {
