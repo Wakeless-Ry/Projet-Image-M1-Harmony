@@ -27,12 +27,11 @@ double mod2pi(double angle)
   return rest + 2*M_PI*(rest<0);
 }
 
-Image projectPixels(Image & imIn, Template & temp, std::vector<int> & V)
+std::vector<Pixel> projectPixels(std::vector<Pixel> & dataIn, Template & temp, std::vector<int> & V)
 {
-  if (V.size() != imIn.get_nb_pixels()) throw std::runtime_error("Buffer doit avoir la même taille que image");
-  std::vector<Pixel> dataIn = imIn.get_img();
-  std::vector<unsigned char> dataOut;
-  dataOut.resize(V.size()*3);
+  if (V.size() != dataIn.size()) throw std::runtime_error("Buffer doit avoir la même taille que image");
+  std::vector<Pixel> dataOut;
+  dataOut.resize(V.size());
   for (int p=0 ; p<V.size() ; p++)
   {
     double h, s, v, h2;
@@ -53,12 +52,9 @@ Image projectPixels(Image & imIn, Template & temp, std::vector<int> & V)
     double sens = (dist > 0)*2-1;
     h2 = Cp - V[p]*w2*(1.0-gaussien(0.0, w2, dist));
     Pixel pix = Pixel::toRGB(h2, s, v);
-    dataOut[3*p] = pix.r;
-    dataOut[3*p+1] = pix.g;
-    dataOut[3*p+2] = pix.b;
+    dataOut[p] = pix;
   }
-  Image imOut = Image(dataOut, imIn.get_width(), imIn.get_height());
-  return imOut;
+  return dataOut;
 }
 
 
@@ -100,6 +96,8 @@ std::vector<Pixel> algo_color_harmonization(std::string& img_path, double lambda
     printf("Energie avant graph cut : %.6f\n", e_before);
 
     tmpl.run_graphcut(pixels, theta1, theta2, is_fixed, lambda, v);
+
+    std::vector<Pixel> dataOut = projectPixels(pixels, tmpl, v);
 
     int n_plus = 0, n_minus = 0;
     for (int idx = 0; idx < n; idx++)
