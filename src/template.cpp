@@ -514,9 +514,16 @@ const std::vector<Pixel>&  Template::get_img() const
 }
 
 // 4.1
-double Template::gaussien(double esp, double st_dev, double x) const
+double Template::gaussien(double esp, double st_dev, double x)
 {
     return exp(pow((x - esp) / st_dev, 2.0) / -2.0);
+}
+
+double Template::mod2pi(double angle) // return angle in [0, 2pi[
+{
+  double pi2 = 2 * M_PI;
+  double rest = angle - double(int(angle / pi2)) * pi2;
+  return rest + 2*M_PI*(rest<0);
 }
 
 std::vector<Pixel> Template::projectPixels(std::vector<Pixel>& dataIn,
@@ -531,6 +538,17 @@ std::vector<Pixel> Template::projectPixels(std::vector<Pixel>& dataIn,
         double h, s, v;
         dataIn[p].toHSV(h, s, v);
 
+        int index = 0;
+        double distMin = 2.0*M_PI;
+        for (int i=0 ; i<temp.get_nbSector() ; i++)
+        {
+            double Cp = temp.get_center(i);
+            double w2 = temp.get_widths(i)/2.0;
+            double bord = Template::congru(Cp - V[p]*w2);
+            double d = mod2pi((bord-h)*V[p]);
+            if (d<distMin) {distMin = d; index = i;}
+        }
+        /*
         if (this->is_fixed[p])
         {
             out[p] = dataIn[p];
@@ -553,19 +571,22 @@ std::vector<Pixel> Template::projectPixels(std::vector<Pixel>& dataIn,
                 best_d = d;
                 best = i;
             }
-        }
+        }*/
 
-        double c  = temp.get_center(best);
-        double w  = temp.get_widths(best);
+        double c  = temp.get_center(index);
+        double w  = temp.get_widths(index);
         double w2 = w / 2.0;
 
-        double d   = fabs(distance_hue(h_proj, c));
-        double sig = w2;
+        //double d   = fabs(distance_hue(h_proj, c));
+        double d = mod2pi((c-h)*V[p]);
+        /*double sig = w2;
         double g   = exp(-(d * d) / (2.0 * sig * sig));
 
         double sign = (distance_hue(h_proj, c) >= 0 ? 1.0 : -1.0);
 
-        double h2 = c + sign * w2 * (1.0 - g);
+        double h2 = c + sign * w2 * (1.0 - g);*/
+        double h2 = c - V[p]*w2*(1.0-gaussien(0.0, w2, d));
+
 
         out[p] = Pixel::toRGB(h2, s, v);
     }

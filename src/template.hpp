@@ -61,7 +61,8 @@ class Template
 		void run_graphcut(const std::vector<Pixel>& pixels, double lambda, std::vector<int>& v) const;
   		const std::vector<Pixel>& get_img() const;
 		// 4.1
-		double gaussien(double esp, double st_dev, double x) const;
+		static double gaussien(double esp, double st_dev, double x);
+		static double mod2pi(double angle);
 		std::vector<Pixel> projectPixels(std::vector<Pixel> & dataIn, Template & temp, std::vector<int> & V) const;
 };
 
