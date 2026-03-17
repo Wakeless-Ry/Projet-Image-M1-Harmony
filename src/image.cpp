@@ -271,7 +271,8 @@ void Image::histogram_one_channel(const std::string name, char channel) const
 // getter
 const int Image::get_width() const { return this->width; }
 const int Image::get_height() const { return this->height; }
-const std::vector<Pixel>& Image::get_img() const { return this->image_data; }
+const int Image::get_nb_pixels() const { return this->nb_pixels; }
+const std::vector<Pixel> Image::get_img() const { return this->image_data; }
 
 
 std::vector<Pixel>::const_iterator Image::begin() const { return this->image_data.begin(); }
