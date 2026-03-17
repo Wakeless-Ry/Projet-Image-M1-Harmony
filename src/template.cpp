@@ -586,6 +586,7 @@ std::vector<Pixel> Template::projectPixels(std::vector<Pixel>& dataIn,
 
         double h2 = c + sign * w2 * (1.0 - g);*/
         double h2 = c - V[p]*w2*(1.0-gaussien(0.0, w2, d));
+        h2 = c;
 
 
         out[p] = Pixel::toRGB(h2, s, v);
