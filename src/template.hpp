@@ -20,6 +20,9 @@ class Template
   		Image img;
 
   		void autoCongru();
+		std::vector<double> theta1;
+		std::vector<double> theta2;
+		std::vector<bool> is_fixed;
 
 	public:
   		Template(std::vector<double> c = {}, std::vector<double> w = {});
@@ -54,18 +57,13 @@ class Template
 		
   		double compute_energie(double lambda, const std::vector<int>& v) const;
   		
-  		void compute_thetas(const std::vector<Pixel>& pixels,
-  		                  std::vector<double>& theta1,
-  		                  std::vector<double>& theta2,
-  		                  std::vector<bool>& is_fixed,
-  		                  std::vector<int>& v) const;
-  		void run_graphcut(const std::vector<Pixel>& pixels,
-  		                  const std::vector<double>& theta1,
-  		                  const std::vector<double>& theta2,
-  		                  const std::vector<bool>& is_fixed,
-  		                  double lambda,
-  		                  std::vector<int>& v) const;
+  		void compute_thetas(const std::vector<Pixel>& pixels, std::vector<int>& v);
+		void run_graphcut(const std::vector<Pixel>& pixels, double lambda, std::vector<int>& v) const;
   		const std::vector<Pixel>& get_img() const;
+		// 4.1
+		static double gaussien(double esp, double st_dev, double x);
+		static double mod2pi(double angle);
+		std::vector<Pixel> projectPixels(std::vector<Pixel> & dataIn, Template & temp, std::vector<int> & V) const;
 };
 
 
