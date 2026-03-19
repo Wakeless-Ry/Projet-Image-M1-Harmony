@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include <filesystem>
 
-Interface::Interface() : selected_img(0), selected_algo(0) {}
+Interface::Interface() : selected_img(0), selected_algo(0), lambda(5.0f), sigma(0.5f) {}
 
 void Interface::load_images(const std::string& folder)
 {
@@ -20,18 +20,6 @@ void Interface::load_images(const std::string& folder)
             }
         }
     }
-}
-
-std::string Interface::get_img() const
-{
-    if (images.empty())
-        return "";
-    return images[selected_img];
-}
-
-int Interface::get_algo() const
-{
-    return selected_algo;
 }
 
 void Interface::render()
@@ -59,7 +47,26 @@ void Interface::render()
     ImGui::Text("Choisir l'algorithme :");
     ImGui::RadioButton("Auncun algo", &selected_algo, 0);
     ImGui::RadioButton("color harmonization", &selected_algo, 1);
+    ImGui::Indent();
+    if (ImGui::CollapsingHeader("Parametres##1"))
+    {
+        ImGui::SliderFloat("Lambda", &lambda, 0.1f, 100.0f, "%.1f");
+        ImGui::SliderFloat("Sigma",  &sigma, 0.1f, 1.0f, "%.2f");
+    }
+    ImGui::Unindent();
     ImGui::RadioButton("Algo 2", &selected_algo, 2);
 
     ImGui::End();
 }
+
+double Interface::get_lambda() const { return (double)lambda; }
+double Interface::get_sigma()  const { return (double)sigma; }
+int Interface::get_algo() const { return selected_algo; }
+std::string Interface::get_img() const
+{
+    if (images.empty())
+        return "";
+    return images[selected_img];
+}
+
+void Interface::set_algo(int algo) { this->selected_algo = algo;}

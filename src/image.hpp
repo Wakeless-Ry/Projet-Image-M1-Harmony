@@ -16,30 +16,29 @@ struct Pixel
 
   	void toHSV(double &h, double &s, double &v) const
 	{
-    	double rf = r / 255.0;
-    	double gf = g / 255.0;
-    	double bf = b / 255.0;
+		double rf = r / 255.0;
+		double gf = g / 255.0;
+		double bf = b / 255.0;
 
-    	double cmax = std::max({rf, gf, bf});
-    	double cmin = std::min({rf, gf, bf});
-    	double delta = cmax - cmin;
+		double cmax = std::max({rf, gf, bf});
+		double cmin = std::min({rf, gf, bf});
+		double delta = cmax - cmin;
 
-    	v = cmax;
+		v = cmax;
+		s = (cmax == 0.0) ? 0.0 : delta / cmax;
 
-    	s = (cmax == 0.0) ? 0.0 : delta / cmax;
+		if (delta == 0.0)
+			h = 0.0;
+		else if (cmax == rf)
+			h = M_PI / 3.0 * fmod((gf - bf) / delta + 6.0, 6.0);
+		else if (cmax == gf)
+			h = M_PI / 3.0 * ((bf - rf) / delta + 2.0);
+		else
+			h = M_PI / 3.0 * ((rf - gf) / delta + 4.0);
 
-    	if (delta == 0.0)
-      		h = 0.0;
-    	else if (cmax == rf)
-      		h = M_PI / 3.0 * fmod((g - b) / delta + 6.0, 6.0);
-    	else if (cmax == gf)
-      		h = M_PI / 3.0 * ((bf - rf) / delta + 2.0);
-    	else
-      		h = M_PI / 3.0 * ((rf - gf) / delta + 4.0);
-
-    	if (h < 0)
-      	h += 2 * M_PI;
-  	}
+		if (h < 0)
+			h += 2 * M_PI;
+	}
 
   static Pixel toRGB(double h, double s, double v)
   {

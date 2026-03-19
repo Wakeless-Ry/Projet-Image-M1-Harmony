@@ -20,15 +20,18 @@ class Template
   		Image img;
 
   		void autoCongru();
-		std::vector<double> theta1;
-		std::vector<double> theta2;
-		std::vector<bool> is_fixed;
+		std::vector<double> theta_1;
+		std::vector<double> theta_2;
+		std::vector<int> pixel_label;
+		std::vector<double> gap_left;
+		std::vector<double> gap_right;
 
 	public:
   		Template(std::vector<double> c = {}, std::vector<double> w = {});
   		Template(double c = 0, double w = 0);
   		Template(Template_format format);
 		void set_image(std::string path);
+		const std::vector<Pixel>& get_img() const;
   		const int get_nbSector() const;
   		const double get_center(int n) const;
   		const double get_widths(int n) const;
@@ -46,23 +49,13 @@ class Template
 		double bestOrientation() const; // M(X,Tm) dans le papier
 		std::pair<Template_format, double> bestTemplate() const; // B(X)
 		// 4.0
-  		double distance_hue(double h1, double h2) const;
-  		double energie_1(int width, int height,
-  		                 const std::vector<Pixel>& pixels,
-  		                 const std::vector<int>& v) const;
-		
-  		double energie_2(int width, int height,
-  		                 const std::vector<Pixel>& pixels,
-  		                 const std::vector<int>& v) const;
-		
-  		double compute_energie(double lambda, const std::vector<int>& v) const;
-  		
-  		void compute_thetas(const std::vector<Pixel>& pixels, std::vector<int>& v);
-		void run_graphcut(const std::vector<Pixel>& pixels, double lambda, std::vector<int>& v) const;
-  		const std::vector<Pixel>& get_img() const;
+ 		double e1(const std::vector<int>& labels, const std::vector<int>& pixel_indices) const;
+		double e2(const std::vector<int>& labels, const std::vector<int>& pixel_indices) const;
+		double e(const std::vector<int>& labels, const std::vector<int>& pixel_indices, double lambda = 1.0) const;
+		void compute_thetas();
+		void compute_labels(double lambda = 1.0);
 		// 4.1
-		double gaussien(double esp, double st_dev, double x) const;
-		std::vector<Pixel> projectPixels(std::vector<Pixel> & dataIn, Template & temp, std::vector<int> & V) const;
+		std::vector<Pixel> shift_hues(double sigma_factor = 0.5) const;
 };
 
 
