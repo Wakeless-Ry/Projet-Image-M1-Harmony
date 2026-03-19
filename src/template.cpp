@@ -3,6 +3,8 @@
 #include <omp.h>
 #include <stdexcept>
 
+#include <iostream>
+
 Template::Template(std::vector<double> c, std::vector<double> w) {
     if (c.size() != w.size())
         throw std::runtime_error(
@@ -470,17 +472,22 @@ std::vector<Pixel> Template::projectPixels(std::vector<Pixel> &dataIn,
                                            std::vector<int> &V) const {
     int N = dataIn.size();
     std::vector<Pixel> out(N);
+    for (int i = 0; i < temp.get_nbSector(); i++) {
+        std::cout<<temp.centers[i]<<std::endl;
+    }
 
     for (int p = 0; p < N; p++) {
         double h, s, v;
         dataIn[p].toHSV(h, s, v);
+        h = Template::congru(h);
 
         int index = 0;
         double distMin = 2.0 * M_PI;
+        double sens = V[p]*(is_fixed[p]*2-1);
         for (int i = 0; i < temp.get_nbSector(); i++) {
             double Cp = temp.get_center(i);
             double w2 = temp.get_widths(i) / 2.0;
-            double bord = Template::congru(Cp - V[p] * w2);
+            double bord = Template::congru(Cp + sens * w2);
             double d = mod2pi((bord - h) * V[p]);
             if (d < distMin) {
                 distMin = d;
@@ -524,8 +531,10 @@ std::vector<Pixel> Template::projectPixels(std::vector<Pixel> &dataIn,
         double sign = (distance_hue(h_proj, c) >= 0 ? 1.0 : -1.0);
 
         double h2 = c + sign * w2 * (1.0 - g);*/
-        double h2 = c - V[p] * w2 * (1.0 - gaussien(0.0, w2, d));
+        sens = -V[p]*(!is_fixed[p]) + ((Template::congru(c-h)<0)*2-1)*is_fixed[p];
+        double h2 = c + sens * w2 * (1.0 - gaussien(0.0, w2, d));
         h2 = c;
+        h2 = mod2pi(h2);
 
         out[p] = Pixel::toRGB(h2, s, v);
     }
