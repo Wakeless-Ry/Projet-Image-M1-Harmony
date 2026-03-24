@@ -488,11 +488,6 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
         pixels[i].toHSV(h, s, v);
         h = congru(h);
 
-        if (s < 0.1)
-        { 
-            result.push_back(pixels[i]);
-            continue;
-        }
 
         int best_sector = -1;
 
@@ -545,3 +540,62 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
 
     return result;
 }
+
+/*
+std::vector<Pixel> Template::shift_hues(double sigma_factor) const
+{
+    const auto& pixels = img.get_img();
+    int nb_pixels = pixels.size();
+    std::vector<Pixel> result;
+    int nb_sectors = get_nbSector();
+    result.reserve(nb_pixels);
+    double pi2 = 2.0 * M_PI;
+
+    for (int i = 0; i < nb_pixels; i++)
+    {
+        double h, s, v;
+        pixels[i].toHSV(h, s, v);
+        h = congru(h);
+        
+        int index = -1;
+        double distMin = 2.0 * M_PI;
+        int sens = (pixel_label[i] == 0) ? -1 : 1; // sens de projection
+
+        for (int sector = 0; sector < nb_sectors; sector++)
+        {
+            if (isInsideSector(h, sector))
+            { 
+                index = sector;
+                break;
+            }
+            else
+            {
+                double Cp = centers[i];
+                double w2 = widths[i] / 2.0;
+                double bord = Template::congru(Cp - sens * w2);
+                double d = bord - h;
+                d += d>0 ? 0 : pi2;
+                if (d < distMin)
+                {
+                    distMin = d;
+                    index = i;
+                }
+
+            }
+        }
+
+        double C = centers[index];
+        double w = widths[index];
+        double sigma = sigma_factor * w;
+        double d = congru(C-h);
+        sens = d>0 ? 1 : -1;
+        d += d>0 ? 0 : pi2;
+        double gauss = exp(-d*d / (sigma*sigma*2.0));
+        double h2  = congru(C - sens * (w / 2.0) * (1.0 - gauss));
+        h2 += h2>0 ? 0 : pi2;
+
+        result.push_back(Pixel::toRGB(h2, s, v));
+    }
+
+    return result;
+}*/
