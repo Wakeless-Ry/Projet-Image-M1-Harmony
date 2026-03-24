@@ -95,9 +95,9 @@ void Template::autoCongru()
 
 double Template::congru(double angle)
 {
-    while (angle > M_PI) angle -= 2 * M_PI;
-    while (angle <= -M_PI) angle += 2 * M_PI;
-    return angle;
+    double pi2 = 2 * M_PI;
+    double rest = angle - double(int(angle / pi2)) * pi2;
+    return (rest > M_PI) ? (rest - pi2) : ((rest <= -M_PI) ? (rest + pi2) : rest);
 }
 
 void Template::rotate(double angle)
