@@ -482,34 +482,35 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
     std::vector<Pixel> result;
     int nb_sectors = get_nbSector();
     result.reserve(nb_pixels);
-    double pi2 = M_PI*2.0;
+    const double pi2 = M_PI*2.0;
 
     for (int i = 0; i < nb_pixels; i++)
     {
         double h, s, v;
         pixels[i].toHSV(h, s, v);
         h = congru(h);
+        bool isInside = false;
 
         int index = -1;
         for (int sector = 0; sector < nb_sectors; sector++)
             if (isInsideSector(h, sector))
             { 
                 index = sector;
+                isInside = true;
                 break;
             }
-        if (index < 0)
+        if (!isInside)
         {
             int label = pixel_label[i];
             double target_border = (label == 0) ? gap_left[i] : gap_right[i];
-            double min_border_dist = pi2;
             for (int sector = 0; sector < nb_sectors; sector++)
             {
-                double direction = congru(centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0);
-                double border_dist = std::abs(congru(target_border - direction));
-                if (border_dist < min_border_dist )
-                { 
-                    min_border_dist = border_dist;
+                double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
+                double border_dist = congru(target_border - border_tested);
+                if (border_dist == 0)
+                {
                     index = sector;
+                    break;
                 }
             }
         }
@@ -518,8 +519,7 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
         double w = widths[index];
         double sigma = sigma_factor * w;
         double d = congru(C-h);
-        double sens = d<0 ? 1.0 : -1.0;
-        //d += d>0 ? 0 : pi2;
+        double sens = (nb_sectors==1 && !isInside) ? (pixel_label[i]==0 ? 1.0 : -1.0) : (d<0 ? 1.0 : -1.0);
         double gauss = exp(-d*d / (sigma*sigma*2.0));
         double h2  = congru(C + sens * (w / 2.0) * (1.0 - gauss));
         h2 += h2>0 ? 0 : pi2;
@@ -529,62 +529,3 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
 
     return result;
 }
-
-/*
-std::vector<Pixel> Template::shift_hues(double sigma_factor) const
-{
-    const auto& pixels = img.get_img();
-    int nb_pixels = pixels.size();
-    std::vector<Pixel> result;
-    int nb_sectors = get_nbSector();
-    result.reserve(nb_pixels);
-    double pi2 = 2.0 * M_PI;
-
-    for (int i = 0; i < nb_pixels; i++)
-    {
-        double h, s, v;
-        pixels[i].toHSV(h, s, v);
-        h = congru(h);
-        
-        int index = -1;
-        double distMin = 2.0 * M_PI;
-        int sens = (pixel_label[i] == 0) ? -1 : 1; // sens de projection
-
-        for (int sector = 0; sector < nb_sectors; sector++)
-        {
-            if (isInsideSector(h, sector))
-            { 
-                index = sector;
-                break;
-            }
-            else
-            {
-                double Cp = centers[i];
-                double w2 = widths[i] / 2.0;
-                double bord = Template::congru(Cp - sens * w2);
-                double d = bord - h;
-                d += d>0 ? 0 : pi2;
-                if (d < distMin)
-                {
-                    distMin = d;
-                    index = i;
-                }
-
-            }
-        }
-
-        double C = centers[index];
-        double w = widths[index];
-        double sigma = sigma_factor * w;
-        double d = congru(C-h);
-        sens = d<0 ? 1 : -1;
-        //d += d>0 ? 0 : pi2;
-        double gauss = exp(-d*d / (sigma*sigma*2.0));
-        double h2  = congru(C + double(sens) * (w / 2.0) * (1.0 - gauss));
-        h2 += h2>0 ? 0 : pi2;
-
-        result.push_back(Pixel::toRGB(h2, s, v));
-    }
-
-    return result;
-}*/
