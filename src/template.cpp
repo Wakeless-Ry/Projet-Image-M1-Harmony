@@ -477,10 +477,11 @@ void Template::compute_labels(double lambda)
 std::vector<Pixel> Template::shift_hues(double sigma_factor) const
 {
     const auto& pixels = img.get_img();
-    int nb_pixels = (int)pixels.size();
+    int nb_pixels = pixels.size();
     std::vector<Pixel> result;
     int nb_sectors = get_nbSector();
     result.reserve(nb_pixels);
+    double pi2 = M_PI*2.0;
 
     for (int i = 0; i < nb_pixels; i++)
     {
@@ -506,7 +507,7 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
                 target_border = gap_left[i];
             else
                 target_border = gap_right[i];
-            double min_border_dist  = 2 * M_PI;
+            double min_border_dist  = pi2;
             for (int sector = 0; sector < nb_sectors; sector++)
             {
                 double left  = congru(centers[sector] - widths[sector] / 2.0);
@@ -533,7 +534,7 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
         double signe = (diff >= 0) ? 1.0 : -1.0;
         double h_shifted  = congru(C + signe * (w / 2.0) * (1.0 - gausienne_sig));
         if (h_shifted < 0)
-            h_shifted += 2 * M_PI;
+            h_shifted += pi2;
 
         result.push_back(Pixel::toRGB(h_shifted, s, v));
     }
