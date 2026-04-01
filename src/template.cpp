@@ -45,7 +45,7 @@ Template::Template(Template_format format)
     case L:
     {
         centers = {TEMPLATE_DEFAULT_CENTER,
-                   TEMPLATE_DEFAULT_CENTER - M_PI / 2.0};
+                   TEMPLATE_DEFAULT_CENTER - M_PI * 0.5};
         widths = {TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_M_WIDTH};
         break;
     }
@@ -71,6 +71,18 @@ Template::Template(Template_format format)
     {
         centers = {TEMPLATE_DEFAULT_CENTER, TEMPLATE_DEFAULT_CENTER - M_PI};
         widths = {TEMPLATE_DEFAULT_M_WIDTH, TEMPLATE_DEFAULT_M_WIDTH};
+        break;
+    }
+    case t:
+    {
+        centers = {TEMPLATE_DEFAULT_CENTER, TEMPLATE_DEFAULT_CENTER - M_PI*2.0/3.0, TEMPLATE_DEFAULT_CENTER + M_PI*2.0/3.0};
+        widths = {TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_S_WIDTH};
+        break;
+    }
+    case q:
+    {
+        centers = {TEMPLATE_DEFAULT_CENTER, TEMPLATE_DEFAULT_CENTER - M_PI*0.5, TEMPLATE_DEFAULT_CENTER + M_PI, TEMPLATE_DEFAULT_CENTER + M_PI*0.5};
+        widths = {TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_S_WIDTH};
         break;
     }
     }

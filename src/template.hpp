@@ -10,7 +10,7 @@ const double TEMPLATE_DEFAULT_M_WIDTH = M_PI / 2.0f;
 const double TEMPLATE_DEFAULT_L_WIDTH = M_PI;
 const double TEMPLATE_DEFAULT_CENTER = 0.0f;
 
-enum Template_format { i = 0, V = 1, L = 2, I = 3, T = 4, Y = 5, X = 6 };
+enum Template_format { i = 0, V = 1, L = 2, I = 3, T = 4, Y = 5, X = 6, t = 7, q = 8 }; // t : triadique, q : quadriadique
 
 class Template
 {

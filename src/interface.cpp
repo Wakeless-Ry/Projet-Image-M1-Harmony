@@ -1,7 +1,7 @@
 #include "interface.hpp"
 #include "imgui.h"
 #include <filesystem>
-const char* format_names[] = { "i", "V", "L", "I", "T", "Y", "X" };
+const char* format_names[] = { "i", "V", "L", "I", "T", "Y", "X", "t", "q"};
 Interface::Interface() : selected_img(0), selected_algo(0), lambda(5.0f), sigma(0.5f) {}
 
 void Interface::load_images(const std::string& folder)
