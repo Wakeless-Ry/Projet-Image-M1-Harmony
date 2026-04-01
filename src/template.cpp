@@ -473,74 +473,58 @@ void Template::compute_labels(double lambda)
         pixel_label[non_fixed[i]] = label;
     }
 }
+
 // 4.1
 std::vector<Pixel> Template::shift_hues(double sigma_factor) const
 {
     const auto& pixels = img.get_img();
-    int nb_pixels = (int)pixels.size();
+    int nb_pixels = pixels.size();
     std::vector<Pixel> result;
     int nb_sectors = get_nbSector();
     result.reserve(nb_pixels);
+    const double pi2 = M_PI*2.0;
 
     for (int i = 0; i < nb_pixels; i++)
     {
         double h, s, v;
         pixels[i].toHSV(h, s, v);
         h = congru(h);
+        bool isInside = false;
 
-        if (s < 0.1)
-        { 
-            result.push_back(pixels[i]);
-            continue;
-        }
-
-        int best_sector = -1;
-
+        int index = -1;
         for (int sector = 0; sector < nb_sectors; sector++)
             if (isInsideSector(h, sector))
             { 
-                best_sector = sector;
+                index = sector;
+                isInside = true;
                 break;
             }
-
-        if (best_sector < 0)
+        if (!isInside)
         {
             int label = pixel_label[i];
-            double target_border = 0.0;
-            if (label == 0)
-                target_border = gap_left[i];
-            else
-                target_border = gap_right[i];
-            double min_border_dist  = 2 * M_PI;
+            double target_border = (label == 0) ? gap_left[i] : gap_right[i];
             for (int sector = 0; sector < nb_sectors; sector++)
             {
-                double left  = congru(centers[sector] - widths[sector] / 2.0);
-                double right = congru(centers[sector] + widths[sector] / 2.0);
-                double border_dist = 0.0;
-                if (label == 0)
-                    border_dist = std::abs(congru(target_border - right));
-                else
-                    border_dist = std::abs(congru(target_border - left));
-                if (border_dist < min_border_dist )
-                { 
-                    min_border_dist  = border_dist;
-                    best_sector = sector;
+                double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
+                double border_dist = congru(target_border - border_tested);
+                if (border_dist == 0)
+                {
+                    index = sector;
+                    break;
                 }
             }
         }
 
-        double C = centers[best_sector];
-        double w = widths[best_sector];
+        double C = centers[index];
+        double w = widths[index];
         double sigma = sigma_factor * w;
-        double diff = congru(h - C);
-        double abs_diff = std::abs(diff);
-        double gausienne_sig = std::exp(-(abs_diff * abs_diff) / (2.0 * sigma * sigma + 1e-12));
-        double signe = (diff >= 0) ? 1.0 : -1.0;
-        double h_shifted  = congru(C + signe * (w / 2.0) * (1.0 - gausienne_sig));
-        if (h_shifted < 0)
-            h_shifted += 2 * M_PI;
+        double d = congru(C-h);
+        double sens = (nb_sectors==1 && !isInside) ? (pixel_label[i]==0 ? 1.0 : -1.0) : (d<0 ? 1.0 : -1.0);
+        double gauss = exp(-d*d / (sigma*sigma*2.0));
+        double h2  = congru(C + sens * (w / 2.0) * (1.0 - gauss));
+        h2 += h2>0 ? 0 : pi2;
 
-        result.push_back(Pixel::toRGB(h_shifted, s, v));
+        result.push_back(Pixel::toRGB(h2, s, v));
     }
 
     return result;
