@@ -64,7 +64,7 @@ void Interface::render()
         ImGui::SliderFloat("Sigma",  &sigma, 0.1f, 1.0f, "%.2f");
     }
     ImGui::Unindent();
-    ImGui::RadioButton("Algo 2", &selected_algo, 2);
+    ImGui::RadioButton("Mosaïque", &selected_algo, 2);
 
     ImGui::End();
 }

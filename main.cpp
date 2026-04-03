@@ -2,8 +2,10 @@
 #include "rendering.hpp"
 #include "image.hpp"
 #include "src/harmonization.hpp"
+#include "src/mosaique.hpp"
 #include "template.hpp"
 #include "harmonization.hpp"
+#include "mosaique.hpp"
 
 #include <iostream>
 #include <cstdio>
@@ -30,6 +32,8 @@ double last_lambda = -1.0;
 double last_sigma = -1.0;
 double last_angle = 0.0;
 Template_format last_fmt = Template_format::i;
+// algo mosa
+Mosaique mosa;
 
 int main()
 {
@@ -155,7 +159,17 @@ int main()
                 last_lambda = current_lambda;
                 last_sigma  = current_sigma;
             }
+        } else if (current_algo == 2)
+        {
+            if (last_algo != 2)
+            {
+                mosa.set_size_bloc(8);
+                mosa.set_img(img_path);
+                mosa.compute_mean();
+                mosa.compute_mosaique();
+            }
         }
+
         last_algo = current_algo;
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

@@ -1,5 +1,6 @@
 #include "template.hpp"
 #include "graph.h"
+#include "image.hpp"
 #include <omp.h>
 #include <stdexcept>
 #include <unordered_map>
@@ -133,6 +134,7 @@ double Template::distanceToTemplate(double hue) const
     return min_dist;
 }
 void Template::set_image(std::string path) { this->img.set_path(path); }
+void Template::set_image_v2(std::vector<unsigned char> data_tmp, int height, int width) { this->img = Image(data_tmp, width, height); }
 const std::vector<Pixel> &Template::get_img() const { return this->img.get_img(); }
 // 3.0
 double Template::F() const {

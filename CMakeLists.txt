@@ -38,6 +38,7 @@ add_executable(ProjetImage
     src/interface.cpp
     src/rendering.cpp
     src/harmonization.cpp
+    src/mosaique.cpp
     common/stb_image.cpp
     external/maxflow-v3.04.src/graph.cpp
     external/maxflow-v3.04.src/maxflow.cpp

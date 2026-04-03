@@ -31,6 +31,7 @@ class Template
   		Template(double c = 0, double w = 0);
   		Template(Template_format format);
 		void set_image(std::string path);
+		void set_image_v2(std::vector<unsigned char> data_tmp, int height, int width);
 		const std::vector<Pixel>& get_img() const;
   		const int get_nbSector() const;
   		const double get_center(int n) const;
