@@ -549,3 +549,52 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
 
     return result;
 }
+
+std::vector<Pixel> Template::shift_hues2(double sigma_factor) const
+{
+    const std::vector<Pixel> & pixels = img.get_img();
+    std::vector<Pixel> result;
+    int nb_sectors = get_nbSector();
+    std::vector<std::vector<int>> pixelIndexPerSector;
+    pixelIndexPerSector.resize(nb_sectors*2);
+    for (int i=0 ; i<pixelIndexPerSector.size() ; i++) pixelIndexPerSector[i].resize(0);
+    std::vector<double> distances;
+    distances.resize(pixels.size());
+
+    for (int p=0 ; p<pixels.size() ; p++)
+    {
+        double h, s, v;
+        pixels[p].toHSV(h, s, v);
+        h = congru(h);
+        bool isInside = false;
+        int index = -1;
+        for (int sector = 0; sector < nb_sectors; sector++)
+            if (isInsideSector(h, sector))
+            { 
+                index = sector;
+                isInside = true;
+                break;
+            }
+        if (!isInside)
+        {
+            int label = pixel_label[p];
+            double target_border = (label == 0) ? gap_left[p] : gap_right[p];
+            for (int sector = 0; sector < nb_sectors; sector++)
+            {
+                double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
+                double border_dist = congru(target_border - border_tested);
+                if (border_dist == 0)
+                {
+                    index = sector;
+                    break;
+                }
+            }
+        }
+        //
+        double C = centers[index];
+        double d = congru(C-h);
+        int cote = (nb_sectors==1 && !isInside) ? (pixel_label[p]==0 ? 0 : 1) : (d<0 ? 0 : 1);
+    }
+
+    return result;
+}
