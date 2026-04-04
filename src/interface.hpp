@@ -14,7 +14,9 @@ private:
     float sigma;
     float angle;
     Template_format fmt = Template_format::I;
-
+    float sigma_2 = 0.5f;
+    float lambda_2 = 1.0f;
+    int bloc_size = 8;
 public:
     Interface();
 
@@ -26,11 +28,13 @@ public:
 
     double get_lambda() const;
     double get_sigma() const;
+    double get_lambda_2() const;
+    double get_sigma_2() const;
     double get_angle() const;
     Template_format get_fmt() const;
     void set_angle(double angle_);
     void set_fmt(Template_format fmt_);
-
+    int get_bloc_size() const;
     int get_algo() const;
     void set_algo(int algo);
 };

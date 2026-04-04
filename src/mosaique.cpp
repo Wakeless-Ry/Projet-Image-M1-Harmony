@@ -2,16 +2,17 @@
 #include "template.hpp"
 #include <stdexcept>
 #include <cstdio>
+#include <string>
 
-void Mosaique::set_size_bloc(int size)
-{
-    this->size_bloc = size;
-}
+void Mosaique::set_size_bloc(int size) { this->size_bloc = size; }
 
 void Mosaique::set_img(std::string path_) {
     this->img_origin.set_path(path_);
     this->path = path_;
 }
+
+void Mosaique::set_lambda(float lambda_) { this->lambda = lambda_; }
+void Mosaique::set_sigma(float sigma_ ) { this->sigma = sigma_; }
 
 void Mosaique::compute_mean() {
     const int HEIGHT = this->img_origin.get_height();
@@ -53,7 +54,7 @@ void Mosaique::compute_mean() {
     }
     this->img_mean = Image(mean, WIDTH, HEIGHT);
     std::string filename = this->path.substr(this->path.find_last_of('/') + 1);
-    this->img_mean.write_ppm("../assets/out/mosaique/mean_" + filename);
+    this->img_mean.write_ppm("../assets/out/mosaique/mean_" + std::to_string(this->size_bloc) + "_" + filename);
 }
 
 std::vector<Pixel> Mosaique::resize_image(std::vector<Pixel>& in)
@@ -81,7 +82,7 @@ std::vector<Pixel> Mosaique::resize_image(std::vector<Pixel>& in)
     return out;
 }
 
-Template Mosaique::bloc_tmpl(std::vector<Pixel> data_tmp, const std::vector<unsigned char>& origin_data, int ORIGIN_W, int ORIGIN_H) const {
+Template Mosaique::bloc_tmpl(std::vector<Pixel> data_tmp, const std::vector<unsigned char>& origin_data, int ORIGIN_W, int ORIGIN_H, int bloc_idx) {
     int nb_pixels = this->size_bloc * this->size_bloc;
     std::vector<unsigned char> tmp(nb_pixels * 3);
     
@@ -98,6 +99,7 @@ Template Mosaique::bloc_tmpl(std::vector<Pixel> data_tmp, const std::vector<unsi
     Template result(fmt);
     result.set_image_v2(origin_data, ORIGIN_W, ORIGIN_H);
     result.rotate(angle);
+    this->modif_mosa[bloc_idx] = result;
     return result;
 }
 
@@ -122,7 +124,7 @@ void Mosaique::compute_mosaique() {
     int nb_blocs_w = WIDTH / this->size_bloc;
     int nb_blocs_h = HEIGHT / this->size_bloc;
     int total = nb_blocs_w * nb_blocs_h;
-
+    this->modif_mosa.resize(total, Template(std::vector<double>{}, std::vector<double>{}));
     #pragma omp parallel for schedule(dynamic)
     for (int bloc_idx = 0; bloc_idx < total; bloc_idx++) {
         int h = (bloc_idx / nb_blocs_w) * this->size_bloc;
@@ -133,9 +135,9 @@ void Mosaique::compute_mosaique() {
             for (int y = w; y < w + this->size_bloc; y++)
                 bloc[(x - h) * this->size_bloc + (y - w)] = DATA_MEAN[x * WIDTH + y];
 
-        Template tmpl = bloc_tmpl(bloc, origin_data, ORIGIN_W, ORIGIN_H);
-        tmpl.compute_labels();
-        std::vector<Pixel> resultat_bloc = tmpl.shift_hues();
+        Template tmpl = bloc_tmpl(bloc, origin_data, ORIGIN_W, ORIGIN_H, bloc_idx);
+        tmpl.compute_labels(this->lambda);
+        std::vector<Pixel> resultat_bloc = tmpl.shift_hues(this->sigma);
         resultat_bloc = resize_image(resultat_bloc);
 
         for (int x = h; x < h + this->size_bloc; x++)
@@ -155,5 +157,43 @@ void Mosaique::compute_mosaique() {
 
     this->img_mosaique = Image(mosaique_data, WIDTH, HEIGHT);
     std::string filename = this->path.substr(this->path.find_last_of('/') + 1);
-    this->img_mosaique.write_ppm("../assets/out/mosaique/mosaique_" + filename);
+    this->img_mosaique.write_ppm("../assets/out/mosaique/mosaique_" + std::to_string(this->size_bloc) + "_" + filename);
+}
+
+
+void Mosaique::recompute_lambda_sigma() {
+    const int HEIGHT = this->img_mean.get_height();
+    const int WIDTH = this->img_mean.get_width();
+    int nb_blocs_w = WIDTH / this->size_bloc;
+    int nb_blocs_h = HEIGHT / this->size_bloc;
+    int total = nb_blocs_w * nb_blocs_h;
+    std::vector<unsigned char> mosaique_data(HEIGHT * WIDTH * 3);
+    int count = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int bloc_idx = 0; bloc_idx < total; bloc_idx++) {
+        int h = (bloc_idx / nb_blocs_w) * this->size_bloc;
+        int w = (bloc_idx % nb_blocs_w) * this->size_bloc;
+
+        Template tmpl = this->modif_mosa[bloc_idx];
+        tmpl.compute_labels(this->lambda);
+        std::vector<Pixel> resultat_bloc = tmpl.shift_hues(this->sigma);
+        resultat_bloc = resize_image(resultat_bloc);
+
+        for (int x = h; x < h + this->size_bloc; x++)
+            for (int y = w; y < w + this->size_bloc; y++) {
+                Pixel p = resultat_bloc[(x - h) * this->size_bloc + (y - w)];
+                mosaique_data[(x * WIDTH + y) * 3 + 0] = p.r;
+                mosaique_data[(x * WIDTH + y) * 3 + 1] = p.g;
+                mosaique_data[(x * WIDTH + y) * 3 + 2] = p.b;
+            }
+        #pragma omp critical
+        {
+            count++;
+            printf("%d/%d\n", count, total);
+        }
+    }
+
+    this->img_mosaique = Image(mosaique_data, WIDTH, HEIGHT);
+    std::string filename = this->path.substr(this->path.find_last_of('/') + 1);
+    this->img_mosaique.write_ppm("../assets/out/mosaique/mosaique_" + std::to_string(this->size_bloc) + "_" + filename);
 }
