@@ -51,7 +51,7 @@ void Interface::render()
     if (ImGui::CollapsingHeader("Parametres##1"))
     {
         ImGui::InputFloat("Angle", &angle, 0.01f, 100.0f, "%.001f");
-        const char* format_names[] = { "i", "V", "L", "I", "T", "Y", "X" };
+        //const char* format_names[] = { "i", "V", "L", "I", "T", "Y", "X" };
 
         for (int i = 0; i < IM_ARRAYSIZE(format_names); i++)
         {
