@@ -10,7 +10,7 @@ class Mosaique {
         Image img_mosaique;
         int size_bloc;  
         std::string path;
-        Template bloc_tmpl(std::vector<Pixel> data_tmp) const;
+        Template bloc_tmpl(std::vector<Pixel> data_tmp, const std::vector<unsigned char>& origin_data, int ORIGIN_W, int ORIGIN_H) const;
         std::vector<Pixel> resize_image(std::vector<Pixel>& in);
     public:
         Mosaique() = default;
@@ -20,5 +20,6 @@ class Mosaique {
         void set_img(std::string path);
         void compute_mean();
         void compute_mosaique();
+        const std::vector<Pixel> get_mosaique() const;
 };
 #endif

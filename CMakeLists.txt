@@ -4,7 +4,7 @@ project(ProjetImageHarmony)
 find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
 add_subdirectory(external)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(
     external
     external/imgui

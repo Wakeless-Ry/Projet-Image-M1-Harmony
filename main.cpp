@@ -7,7 +7,6 @@
 #include "harmonization.hpp"
 #include "mosaique.hpp"
 
-#include <iostream>
 #include <cstdio>
 #include <vector>
 #include <GL/glew.h>
@@ -167,6 +166,8 @@ int main()
                 mosa.set_img(img_path);
                 mosa.compute_mean();
                 mosa.compute_mosaique();
+                std::string filename = img_path.substr(img_path.find_last_of('/') + 1);
+                renderer.set_result("../assets/out/mosaique/mosaique_" + filename);
             }
         }
 
