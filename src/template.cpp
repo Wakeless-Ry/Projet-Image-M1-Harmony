@@ -540,6 +540,8 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
         double sigma = sigma_factor * w;
         double d = congru(C-h);
         double sens = (nb_sectors==1 && !isInside) ? (pixel_label[i]==0 ? 1.0 : -1.0) : (d<0 ? 1.0 : -1.0);
+        d = isInside ? abs(d) : ((pixel_label[i]==0 ? 1.0 : -1.0) * (h-C));
+        d += d>0 ? 0 : pi2;
         double gauss = exp(-d*d / (sigma*sigma*2.0));
         double h2  = congru(C + sens * (w / 2.0) * (1.0 - gauss));
         h2 += h2>0 ? 0 : pi2;
