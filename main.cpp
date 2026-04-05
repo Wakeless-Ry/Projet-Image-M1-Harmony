@@ -2,10 +2,11 @@
 #include "rendering.hpp"
 #include "image.hpp"
 #include "src/harmonization.hpp"
+#include "src/mosaique.hpp"
 #include "template.hpp"
 #include "harmonization.hpp"
+#include "mosaique.hpp"
 
-#include <iostream>
 #include <cstdio>
 #include <vector>
 #include <GL/glew.h>
@@ -30,6 +31,11 @@ double last_lambda = -1.0;
 double last_sigma = -1.0;
 double last_angle = 0.0;
 Template_format last_fmt = Template_format::i;
+// algo mosa
+Mosaique mosa;
+double last_lambda_2 = 1.0;
+double last_sigma_2 = 0.5;
+int last_block_size = 8;
 
 int main()
 {
@@ -108,9 +114,9 @@ int main()
             double current_sigma  = interface.get_sigma();
             double current_angle = interface.get_angle();
             Template_format current_fmt = interface.get_fmt();
-            bool recompute_template =  (current_angle != last_angle) || (current_fmt != last_fmt);
-            bool recompute_labels =  (last_algo != 1) || recompute_template || (current_lambda != last_lambda);
-            bool recompute_shift  = recompute_labels  || (current_sigma  != last_sigma);
+            bool recompute_template = (current_angle != last_angle) || (current_fmt != last_fmt);
+            bool recompute_labels = (last_algo != 1) || recompute_template || (current_lambda != last_lambda);
+            bool recompute_shift = recompute_labels  || (current_sigma  != last_sigma);
 
             if (recompute_shift)
             {
@@ -122,6 +128,7 @@ int main()
                     harmo.compute_best_template(agl, fmt);
                     interface.set_angle(agl);
                     interface.set_fmt(fmt);
+                    harmo.build_graph();
                 }
                 if (recompute_template)
                     harmo.new_template(current_angle, current_fmt); 
@@ -129,7 +136,7 @@ int main()
                 if (recompute_labels)
                 {
                     harmo.set_lambda(current_lambda);
-                    harmo.compute_labels();
+                    harmo.solve_graph();
                 }
 
                 harmo.set_sigma(current_sigma);
@@ -153,9 +160,35 @@ int main()
                 last_fmt = current_fmt;
                 last_angle = current_angle;
                 last_lambda = current_lambda;
-                last_sigma  = current_sigma;
+                last_sigma = current_sigma;
             }
+        } else if (current_algo == 2)
+        {
+            int current_block_size = interface.get_bloc_size();
+            float current_lambda_2 = interface.get_lambda_2();
+            float current_sigma_2 = interface.get_sigma_2();
+            if (last_algo != 2 || current_block_size != last_block_size)
+            {
+                mosa.set_size_bloc(current_block_size);
+                mosa.set_img(img_path);
+                mosa.compute_mean();
+                mosa.compute_mosaique();
+                std::string filename = img_path.substr(img_path.find_last_of('/') + 1);
+                renderer.set_result("../assets/out/mosaique/mosaique_" + std::to_string(current_block_size) + "_" + filename);
+            }
+            else if (current_lambda_2 != last_lambda_2 || current_sigma_2 != last_sigma_2)
+            {
+                mosa.set_lambda(current_lambda_2);
+                mosa.set_sigma(current_sigma_2);
+                mosa.recompute_lambda_sigma();
+                std::string filename = img_path.substr(img_path.find_last_of('/') + 1);
+                renderer.set_result("../assets/out/mosaique/mosaique_" + std::to_string(current_block_size) + "_" + filename);
+            }
+            last_lambda_2 = current_lambda_2;
+            last_sigma_2 = current_sigma_2;
+            last_block_size = current_block_size;
         }
+
         last_algo = current_algo;
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

@@ -33,6 +33,9 @@ public:
     void set_lambda(double l);
     void set_sigma(double s);
     void set_image(const std::string& path);
+
+    void build_graph();
+    void solve_graph();
 };
 
 #endif

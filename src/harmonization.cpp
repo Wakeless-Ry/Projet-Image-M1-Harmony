@@ -1,5 +1,5 @@
 #include "harmonization.hpp"
-#include <iostream>
+
 Harmonization::Harmonization(double lambda, double sigma)
     : lambda(lambda), sigma(sigma), tmpl(std::vector<double>{}, std::vector<double>{}) {}
 
@@ -20,10 +20,8 @@ void Harmonization::compute_best_template(double& angle, Template_format& format
     tmpl.rotate(angle);
 }
 
-void Harmonization::compute_labels()
-{
-    tmpl.compute_labels(lambda);
-}
+void Harmonization::build_graph() { tmpl.build_graph(); }
+void Harmonization::solve_graph() { tmpl.solve_graph(this->lambda); }
 
 std::vector<Pixel> Harmonization::shift_hues()
 {
@@ -35,6 +33,7 @@ void Harmonization::new_template(double angle, Template_format fmt)
     Template new_tmpl = Template(fmt);
     new_tmpl.set_image(img_path);
     new_tmpl.rotate(angle);
+    new_tmpl.build_graph();
     this->tmpl = new_tmpl;
 }
 

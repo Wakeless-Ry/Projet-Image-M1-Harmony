@@ -1,10 +1,11 @@
 #include "template.hpp"
 #include "graph.h"
+#include "image.hpp"
 #include <omp.h>
 #include <stdexcept>
 #include <unordered_map>
 
-Template::Template(std::vector<double> c, std::vector<double> w)
+Template::Template(std::vector<double> c, std::vector<double> w) : format(Template_format::i)
 {
     if (c.size() != w.size())
         throw std::runtime_error(
@@ -21,13 +22,13 @@ Template::Template(std::vector<double> c, std::vector<double> w)
     }
 }
 
-Template::Template(double c, double w)
+Template::Template(double c, double w) : format(Template_format::i)
 {
     centers = {Template::congru(c)};
     widths = {std::abs(w)};
 }
 
-Template::Template(Template_format format)
+Template::Template(Template_format format) : format(format)
 {
     switch (format)
     {
@@ -95,7 +96,7 @@ const double Template::get_center(int n) const { return centers[n]; }
 const double Template::get_widths(int n) const { return widths[n]; }
 const std::vector<double> Template::get_center() const { return centers; }
 const std::vector<double> Template::get_widths() const { return widths; }
-
+const Template_format Template::get_format() const { return this->format; }
 void Template::autoCongru()
 {
     for (int i = 0; i < centers.size(); i++)
@@ -153,6 +154,7 @@ double Template::distanceToTemplate(double hue) const
     return min_dist;
 }
 void Template::set_image(std::string path) { this->img.set_path(path); }
+void Template::set_image_v2(std::vector<unsigned char> data_tmp, int height, int width) { this->img = Image(data_tmp, width, height); }
 const std::vector<Pixel> &Template::get_img() const { return this->img.get_img(); }
 // 3.0
 double Template::F() const {
@@ -393,7 +395,7 @@ void Template::compute_thetas()
     }
 }
 
-void Template::compute_labels(double lambda)
+SharedGraph Template::build_graph()
 {
     compute_thetas();
 
@@ -401,97 +403,119 @@ void Template::compute_labels(double lambda)
     int pixel_size = (int)pixels.size();
     int img_width = img.get_width();
 
-    std::vector<int> non_fixed;
-    non_fixed.reserve(pixel_size);
+    SharedGraph g;
+
+    g.non_fixed.reserve(pixel_size);
+    std::vector<std::vector<int>> local_buffers(omp_get_max_threads());
+
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        auto& buffer = local_buffers[tid];
+
+        #pragma omp for nowait
+        for (int i = 0; i < pixel_size; i++)
+        {
+            double h, s, v;
+            pixels[i].toHSV(h, s, v);
+            h = congru(h);
+
+            bool fixed = false;
+            for (int nb_sectors = 0; nb_sectors < get_nbSector(); nb_sectors++)
+            {
+                if (isInsideSector(h, nb_sectors))
+                {
+                    fixed = true;
+                    break;
+                }
+            }
+
+            if (!fixed)
+                buffer.push_back(i);
+        }
+    }
+
+    // merge final
+    g.non_fixed.clear();
+    g.non_fixed.reserve(pixel_size);
+    for (const auto& buf : local_buffers)
+        g.non_fixed.insert(g.non_fixed.end(), buf.begin(), buf.end());
+    g.non_fixed_size = (int)g.non_fixed.size();
+
+    g.local_id.reserve(g.non_fixed_size * 2);
+    for (int i = 0; i < g.non_fixed_size; i++)
+        g.local_id[g.non_fixed[i]] = i;
+
+    g.hsv_cache.resize(pixel_size);
+    #pragma omp parallel for
     for (int i = 0; i < pixel_size; i++)
     {
         double h, s, v;
         pixels[i].toHSV(h, s, v);
-        h = congru(h);
-        bool fixed = false;
-        for (int nb_sectors = 0; nb_sectors < get_nbSector(); nb_sectors++)
-            if (isInsideSector(h, nb_sectors))
-            {
-                fixed = true;
-                break;
-            }
-        if (!fixed)
-            non_fixed.push_back(i);
+        g.hsv_cache[i] = {congru(h), s, v};
     }
-
-    int non_fixed_size = (int)non_fixed.size();
-    if (non_fixed_size == 0)
-    { 
-        pixel_label.assign(pixel_size, -1);
-        return; 
-    }
-
-    std::unordered_map<int,int> local_id;
-    local_id.reserve(non_fixed_size * 2);
-    for (int i = 0; i < non_fixed_size; i++)
-        local_id[non_fixed[i]] = i;
-
-    Graph<double,double,double> graph_cut(non_fixed_size, non_fixed_size * 2);
-    graph_cut.add_node(non_fixed_size);
-
-    for (int i = 0; i < non_fixed_size; i++)
-    {
-        double h, s, val;
-        pixels[non_fixed[i]].toHSV(h, s, val);
-        h = congru(h);
-        double dist_1 = std::abs(congru(h - gap_left[non_fixed[i]]))  * s;
-        double dist_2 = std::abs(congru(h - gap_right[non_fixed[i]])) * s;
-        graph_cut.add_tweights(i, lambda * dist_2, lambda * dist_1);
-    }
-
     const int dx[] = {1, 0};
     const int dy[] = {0, 1};
-    int edge_count = 0;
-    for (int i = 0; i < non_fixed_size; i++)
+    for (int i = 0; i < g.non_fixed_size; i++)
     {
-        int flat_p = non_fixed[i];
-        int col_p = flat_p  % img_width;
-        int row_p = flat_p  / img_width;
-
-        double h_p, s_p, v_p;
-        pixels[flat_p ].toHSV(h_p, s_p, v_p);
-        h_p = congru(h_p);
+        int flat_p = g.non_fixed[i];
+        int col_p  = flat_p % img_width;
+        int row_p  = flat_p / img_width;
 
         for (int d = 0; d < 2; d++)
         {
-            int flat_q  = (row_p + dy[d]) * img_width + (col_p + dx[d]);
-            if (flat_q  < 0 || flat_q >= pixel_size)
+            int flat_q = (row_p + dy[d]) * img_width + (col_p + dx[d]);
+            if (flat_q < 0 || flat_q >= pixel_size)
                 continue;
 
-            auto it = local_id.find(flat_q );
-            if (it == local_id.end())
+            auto it = g.local_id.find(flat_q);
+            if (it == g.local_id.end())
                 continue;
             int j = it->second;
 
-            double h_q, s_q, v_q;
-            pixels[flat_q ].toHSV(h_q, s_q, v_q);
-            h_q = congru(h_q);
+            double smax   = std::max(g.hsv_cache[flat_p].s, g.hsv_cache[flat_q].s);
+            double h_dist = std::abs(congru(g.hsv_cache[flat_p].h - g.hsv_cache[flat_q].h));
+            double w_pq   = smax / (h_dist + 1e-8);
 
-            double smax = std::max(s_p, s_q);
-            double h_dist = std::abs(congru(h_p - h_q));
-            double w_pq = std::min(smax / (h_dist + 1e-8), 5.0 * lambda);
-
-            graph_cut.add_edge(i, j, w_pq, w_pq);
-            edge_count++;
+            g.cached_edges.push_back({i, j, w_pq});
         }
     }
+    this->graph = g;
+    graph_built = true;
+    return g;
+}
+
+void Template::solve_graph(double lambda) {
+
+    const auto& pixels = img.get_img();
+    int pixel_size = (int)pixels.size();
+
+    if (this->graph.non_fixed_size == 0)
+    {
+        pixel_label.assign(pixel_size, -1);
+        return;
+    }
+
+    Graph<double,double,double> graph_cut(this->graph.non_fixed_size, (int)this->graph.cached_edges.size());
+    graph_cut.add_node(this->graph.non_fixed_size);
+
+    for (int i = 0; i < this->graph.non_fixed_size; i++)
+    {
+        double h = this->graph.hsv_cache[this->graph.non_fixed[i]].h;
+        double s = this->graph.hsv_cache[this->graph.non_fixed[i]].s;
+        double dist_1 = std::abs(congru(h - gap_left[this->graph.non_fixed[i]])) * s;
+        double dist_2 = std::abs(congru(h - gap_right[this->graph.non_fixed[i]])) * s;
+        graph_cut.add_tweights(i, lambda * dist_2, lambda * dist_1);
+    }
+
+    for (const auto& [i, j, w] : this->graph.cached_edges)
+        graph_cut.add_edge(i, j, std::min(w, 5.0 * lambda), std::min(w, 5.0 * lambda));
+
     graph_cut.maxflow();
 
     pixel_label.assign(pixel_size, -1);
-    for (int i = 0; i < non_fixed_size; i++)
-    {
-        int label = 0;
-        if (graph_cut.what_segment(i) == Graph<double,double,double>::SINK)
-            label = 1;
-        else
-            label = 0;
-        pixel_label[non_fixed[i]] = label;
-    }
+    for (int i = 0; i < this->graph.non_fixed_size; i++)
+        pixel_label[this->graph.non_fixed[i]] = (graph_cut.what_segment(i) == Graph<double,double,double>::SINK) ? 1 : 0;
 }
 
 // 4.1

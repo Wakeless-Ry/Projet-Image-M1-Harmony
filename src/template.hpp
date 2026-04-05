@@ -4,11 +4,22 @@
 #include <cmath>
 #include <vector>
 #include <image.hpp>
-
+#include <unordered_map>
 const double TEMPLATE_DEFAULT_S_WIDTH = M_PI / 6.0f;
 const double TEMPLATE_DEFAULT_M_WIDTH = M_PI / 2.0f;
 const double TEMPLATE_DEFAULT_L_WIDTH = M_PI;
 const double TEMPLATE_DEFAULT_CENTER = 0.0f;
+struct HSVCache {
+    double h, s, v;
+};
+struct SharedGraph {
+    std::vector<int> non_fixed;
+    int non_fixed_size = 0;
+    std::unordered_map<int,int> local_id;
+    std::vector<HSVCache> hsv_cache;
+    struct CachedEdge { int i, j; double w; };
+    std::vector<CachedEdge> cached_edges;
+};
 
 enum Template_format { i = 0, V = 1, L = 2, I = 3, T = 4, Y = 5, X = 6, t = 7, q = 8 }; // t : triadique, q : quadriadique
 
@@ -18,19 +29,21 @@ class Template
   		std::vector<double> centers;
   		std::vector<double> widths;
   		Image img;
-
+		Template_format format;
   		void autoCongru();
 		std::vector<double> theta_1;
 		std::vector<double> theta_2;
 		std::vector<int> pixel_label;
 		std::vector<double> gap_left;
 		std::vector<double> gap_right;
-
+		SharedGraph graph;
+		bool graph_built = false;
 	public:
   		Template(std::vector<double> c = {}, std::vector<double> w = {});
   		Template(double c, double w = TEMPLATE_DEFAULT_S_WIDTH);
   		Template(Template_format format);
 		void set_image(std::string path);
+		void set_image_v2(std::vector<unsigned char> data_tmp, int height, int width);
 		const std::vector<Pixel>& get_img() const;
   		const int get_nbSector() const;
   		const double get_center(int n) const;
@@ -40,6 +53,7 @@ class Template
 
 		void setWidths(double w);
 		void setWidths(std::vector<double> w = {});
+		const Template_format get_format() const;
   		void rotate(double angle);
 
   		static double congru(double angle);
@@ -55,7 +69,8 @@ class Template
 		double e2(const std::vector<int>& labels, const std::vector<int>& pixel_indices) const;
 		double e(const std::vector<int>& labels, const std::vector<int>& pixel_indices, double lambda = 1.0) const;
 		void compute_thetas();
-		void compute_labels(double lambda = 1.0);
+		void solve_graph(double lambda);
+		SharedGraph build_graph();
 		// 4.1
 		std::vector<Pixel> shift_hues(double sigma_factor = 0.5) const;
 		std::vector<Pixel> shift_hues2() const;

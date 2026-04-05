@@ -4,7 +4,7 @@ project(ProjetImageHarmony)
 find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
 add_subdirectory(external)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(
     external
     external/imgui
@@ -38,6 +38,7 @@ add_executable(ProjetImage
     src/interface.cpp
     src/rendering.cpp
     src/harmonization.cpp
+    src/mosaique.cpp
     common/stb_image.cpp
     external/maxflow-v3.04.src/graph.cpp
     external/maxflow-v3.04.src/maxflow.cpp
