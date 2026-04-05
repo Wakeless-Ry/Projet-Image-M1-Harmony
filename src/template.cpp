@@ -15,8 +15,7 @@ Template::Template(std::vector<double> c, std::vector<double> w) : format(Templa
     centers.resize(c.size());
     widths.resize(w.size());
 
-    for (int i = 0; i < c.size(); i++)
-    {
+    for (int i = 0; i < c.size(); i++) {
         centers[i] = Template::congru(c[i]);
         widths[i] = std::abs(w[i]);
     }
@@ -37,39 +36,33 @@ Template::Template(Template_format format) : format(format)
         widths = {TEMPLATE_DEFAULT_S_WIDTH};
         break;
     }
-    case V:
-    {
+    case V: {
         centers = {TEMPLATE_DEFAULT_CENTER};
         widths = {TEMPLATE_DEFAULT_M_WIDTH};
         break;
     }
-    case L:
-    {
+    case L: {
         centers = {TEMPLATE_DEFAULT_CENTER,
                    TEMPLATE_DEFAULT_CENTER - M_PI * 0.5};
         widths = {TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_M_WIDTH};
         break;
     }
-    case I:
-    {
+    case I: {
         centers = {TEMPLATE_DEFAULT_CENTER, TEMPLATE_DEFAULT_CENTER - M_PI};
         widths = {TEMPLATE_DEFAULT_S_WIDTH, TEMPLATE_DEFAULT_S_WIDTH};
         break;
     }
-    case T:
-    {
+    case T: {
         centers = {TEMPLATE_DEFAULT_CENTER};
         widths = {TEMPLATE_DEFAULT_L_WIDTH};
         break;
     }
-    case Y:
-    {
+    case Y: {
         centers = {TEMPLATE_DEFAULT_CENTER, TEMPLATE_DEFAULT_CENTER - M_PI};
         widths = {TEMPLATE_DEFAULT_M_WIDTH, TEMPLATE_DEFAULT_S_WIDTH};
         break;
     }
-    case X:
-    {
+    case X: {
         centers = {TEMPLATE_DEFAULT_CENTER, TEMPLATE_DEFAULT_CENTER - M_PI};
         widths = {TEMPLATE_DEFAULT_M_WIDTH, TEMPLATE_DEFAULT_M_WIDTH};
         break;
@@ -106,11 +99,11 @@ void Template::autoCongru()
     }
 }
 
-double Template::congru(double angle)
-{
+double Template::congru(double angle) {
     double pi2 = 2 * M_PI;
     double rest = angle - double(int(angle / pi2)) * pi2;
-    return (rest > M_PI) ? (rest - pi2) : ((rest <= -M_PI) ? (rest + pi2) : rest);
+    return (rest > M_PI) ? (rest - pi2)
+                         : ((rest <= -M_PI) ? (rest + pi2) : rest);
 }
 
 void Template::setWidths(double w) { for (int i=0 ; i<widths.size() ; i++) widths[i] = w; }
@@ -127,18 +120,15 @@ void Template::rotate(double angle)
         centers[i] = Template::congru(centers[i] + angle);
 }
 
-bool Template::isInsideSector(double hue, int n) const
-{
+bool Template::isInsideSector(double hue, int n) const {
     double diff = std::abs(congru(hue - centers[n]));
     return diff <= widths[n] / 2.0;
 }
 
-double Template::distanceToTemplate(double hue) const
-{
+double Template::distanceToTemplate(double hue) const {
     double min_dist = 2 * M_PI;
 
-    for (int n = 0; n < get_nbSector(); n++)
-    {
+    for (int n = 0; n < get_nbSector(); n++) {
         if (isInsideSector(hue, n))
             return 0.0;
 
@@ -167,32 +157,31 @@ double Template::F() const {
     return total;
 }
 
-double Template::bestOrientation() const
-{
+double Template::bestOrientation() const {
     const double golden = 0.3819660;
     const double tol = 1e-4;
     double a = 0.0, b = 2 * M_PI;
 
-  double x = a + golden * (b - a);
-  double w = x, v = x;
+    double x = a + golden * (b - a);
+    double w = x, v = x;
 
-  Template tx = *this;
-  tx.rotate(x);
-  double fx = tx.F();
-  double fw = fx, fv = fx;
+    Template tx = *this;
+    tx.rotate(x);
+    double fx = tx.F();
+    double fw = fx, fv = fx;
 
-  double d = 0.0, e = 0.0;
+    double d = 0.0, e = 0.0;
 
     for (int iter = 0; iter < 100; iter++) {
         double midpoint = 0.5 * (a + b);
         double tol1 = tol * std::abs(x) + 1e-10;
         double tol2 = 2.0 * tol1;
 
-    if (std::abs(x - midpoint) <= tol2 - 0.5 * (b - a))
-      break;
+        if (std::abs(x - midpoint) <= tol2 - 0.5 * (b - a))
+            break;
 
-    bool parabolic_ok = false;
-    double u;
+        bool parabolic_ok = false;
+        double u;
 
         if (std::abs(e) > tol1) {
             double r = (x - w) * (fx - fv);
@@ -206,8 +195,7 @@ double Template::bestOrientation() const
             e = d;
 
             if (std::abs(p) < std::abs(0.5 * q * r) && p > q * (a - x) &&
-                p < q * (b - x))
-                {
+                p < q * (b - x)) {
                 d = p / q;
                 u = x + d;
                 parabolic_ok = true;
@@ -219,10 +207,10 @@ double Template::bestOrientation() const
             d = golden * e;
         }
 
-    u = x + d;
-    Template tu = *this;
-    tu.rotate(u);
-    double fu = tu.F();
+        u = x + d;
+        Template tu = *this;
+        tu.rotate(u);
+        double fu = tu.F();
 
         if (fu <= fx) {
             if (u < x)
@@ -240,8 +228,7 @@ double Template::bestOrientation() const
                 a = u;
             else
                 b = u;
-            if (fu <= fw || w == x)
-            {
+            if (fu <= fw || w == x) {
                 v = w;
                 fv = fw;
                 w = u;
@@ -253,25 +240,23 @@ double Template::bestOrientation() const
         }
     }
 
-  return x;
+    return x;
 }
 
-std::pair<Template_format, double> Template::bestTemplate() const
-{
+std::pair<Template_format, double> Template::bestTemplate() const {
     Template_format best_format = i;
     double best_angle = 0.0;
     double best_F = std::numeric_limits<double>::max();
 
-    for (int ite = 0; ite <= 6; ite++)
-    {
+    for (int ite = 0; ite <= 6; ite++) {
         Template t((Template_format)ite);
         t.img = this->img;
         double angle = t.bestOrientation();
 
-    Template t2((Template_format)ite);
-    t2.img = this->img;
-    t2.rotate(angle);
-    double f = t2.F();
+        Template t2((Template_format)ite);
+        t2.img = this->img;
+        t2.rotate(angle);
+        double f = t2.F();
 
         if (f < best_F) {
             best_F = f;
@@ -280,16 +265,15 @@ std::pair<Template_format, double> Template::bestTemplate() const
         }
     }
 
-  return {best_format, best_angle};
+    return {best_format, best_angle};
 }
 // 4.0
-double Template::e1(const std::vector<int>& labels, const std::vector<int>& pixel_indices) const
-{
-    const auto& pixels = img.get_img();
+double Template::e1(const std::vector<int> &labels,
+                    const std::vector<int> &pixel_indices) const {
+    const auto &pixels = img.get_img();
     double sum = 0.0;
 
-    for (int p_i = 0; p_i < (int)pixel_indices.size(); p_i++)
-    {
+    for (int p_i = 0; p_i < (int)pixel_indices.size(); p_i++) {
         double h, s, v;
         pixels[pixel_indices[p_i]].toHSV(h, s, v);
         double border_hue = 0;
@@ -302,10 +286,9 @@ double Template::e1(const std::vector<int>& labels, const std::vector<int>& pixe
     return sum;
 }
 
-
-double Template::e2(const std::vector<int>& labels, const std::vector<int>& pixel_indices) const
-{
-    const auto& pixels = img.get_img();
+double Template::e2(const std::vector<int> &labels,
+                    const std::vector<int> &pixel_indices) const {
+    const auto &pixels = img.get_img();
     int img_width = img.get_width();
 
     std::unordered_map<int, int> idx_map;
@@ -317,8 +300,8 @@ double Template::e2(const std::vector<int>& labels, const std::vector<int>& pixe
 
     double E2_sum = 0.0;
 
-    for (int pixel_idx = 0; pixel_idx < (int)pixel_indices.size(); pixel_idx++)
-    {
+    for (int pixel_idx = 0; pixel_idx < (int)pixel_indices.size();
+         pixel_idx++) {
         int flat_p = pixel_indices[pixel_idx];
         int col_p = flat_p % img_width;
         int row_p = flat_p / img_width;
@@ -327,8 +310,7 @@ double Template::e2(const std::vector<int>& labels, const std::vector<int>& pixe
         pixels[flat_p].toHSV(H_p, S_p, V_p);
         H_p = congru(H_p);
 
-        for (int d = 0; d < 2; d++)
-        {
+        for (int d = 0; d < 2; d++) {
             int flat_q = (row_p + dy[d]) * img_width + (col_p + dx[d]);
 
             auto it = idx_map.find(flat_q);
@@ -354,14 +336,13 @@ double Template::e2(const std::vector<int>& labels, const std::vector<int>& pixe
     return E2_sum;
 }
 
-double Template::e(const std::vector<int>& labels, const std::vector<int>& pixel_indices, double lambda) const
-{
+double Template::e(const std::vector<int> &labels,
+                   const std::vector<int> &pixel_indices, double lambda) const {
     return lambda * e1(labels, pixel_indices) + e2(labels, pixel_indices);
 }
 
-void Template::compute_thetas()
-{
-    const auto& pixels = img.get_img();
+void Template::compute_thetas() {
+    const auto &pixels = img.get_img();
     int N = (int)pixels.size();
 
     theta_1.assign(N, 0.0);
@@ -370,8 +351,7 @@ void Template::compute_thetas()
     gap_right.assign(N, 0.0);
 
     std::vector<double> borders;
-    for (int k = 0; k < get_nbSector(); k++)
-    {
+    for (int k = 0; k < get_nbSector(); k++) {
         borders.push_back(congru(centers[k] - widths[k] / 2.0));
         borders.push_back(congru(centers[k] + widths[k] / 2.0));
     }
@@ -383,7 +363,8 @@ void Template::compute_thetas()
         pixels[i].toHSV(h, s, v);
         h = congru(h);
 
-        int idx = (int)(std::lower_bound(borders.begin(), borders.end(), h) - borders.begin());
+        int idx = (int)(std::lower_bound(borders.begin(), borders.end(), h) -
+                        borders.begin());
 
         double t1 = borders[(idx - 1 + boder_size) % boder_size];
         double t2 = borders[idx % boder_size];
@@ -399,7 +380,7 @@ SharedGraph Template::build_graph()
 {
     compute_thetas();
 
-    const auto& pixels = img.get_img();
+    const auto &pixels = img.get_img();
     int pixel_size = (int)pixels.size();
     int img_width = img.get_width();
 
@@ -519,17 +500,15 @@ void Template::solve_graph(double lambda) {
 }
 
 // 4.1
-std::vector<Pixel> Template::shift_hues(double sigma_factor) const
-{
-    const auto& pixels = img.get_img();
+std::vector<Pixel> Template::shift_hues(double sigma_factor) const {
+    const auto &pixels = img.get_img();
     int nb_pixels = pixels.size();
     std::vector<Pixel> result;
     int nb_sectors = get_nbSector();
     result.reserve(nb_pixels);
-    const double pi2 = M_PI*2.0;
+    const double pi2 = M_PI * 2.0;
 
-    for (int i = 0; i < nb_pixels; i++)
-    {
+    for (int i = 0; i < nb_pixels; i++) {
         double h, s, v;
         pixels[i].toHSV(h, s, v);
         h = congru(h);
@@ -537,22 +516,20 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
 
         int index = -1;
         for (int sector = 0; sector < nb_sectors; sector++)
-            if (isInsideSector(h, sector))
-            { 
+            if (isInsideSector(h, sector)) {
                 index = sector;
                 isInside = true;
                 break;
             }
-        if (!isInside)
-        {
+        if (!isInside) {
             int label = pixel_label[i];
             double target_border = (label == 0) ? gap_left[i] : gap_right[i];
-            for (int sector = 0; sector < nb_sectors; sector++)
-            {
-                double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
+            for (int sector = 0; sector < nb_sectors; sector++) {
+                double border_tested = centers[sector] + (label == 0 ? 1 : -1) *
+                                                             widths[sector] /
+                                                             2.0;
                 double border_dist = congru(target_border - border_tested);
-                if (border_dist == 0)
-                {
+                if (border_dist == 0) {
                     index = sector;
                     break;
                 }
@@ -562,11 +539,13 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const
         double C = centers[index];
         double w = widths[index];
         double sigma = sigma_factor * w;
-        double d = congru(C-h);
-        double sens = (nb_sectors==1 && !isInside) ? (pixel_label[i]==0 ? 1.0 : -1.0) : (d<0 ? 1.0 : -1.0);
-        double gauss = exp(-d*d / (sigma*sigma*2.0));
-        double h2  = congru(C + sens * (w / 2.0) * (1.0 - gauss));
-        h2 += h2>0 ? 0 : pi2;
+        double d = congru(C - h);
+        double sens = (nb_sectors == 1 && !isInside)
+                          ? (pixel_label[i] == 0 ? 1.0 : -1.0)
+                          : (d < 0 ? 1.0 : -1.0);
+        double gauss = exp(-d * d / (sigma * sigma * 2.0));
+        double h2 = congru(C + sens * (w / 2.0) * (1.0 - gauss));
+        h2 += h2 > 0 ? 0 : pi2;
 
         result.push_back(Pixel::toRGB(h2, s, v));
     }
