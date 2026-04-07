@@ -490,7 +490,7 @@ void Template::solve_graph(double lambda) {
     }
 
     for (const auto& [i, j, w] : this->graph.cached_edges)
-        graph_cut.add_edge(i, j, std::min(w, 5.0 * lambda), std::min(w, 5.0 * lambda));
+        graph_cut.add_edge(i, j, w, w);
 
     graph_cut.maxflow();
 

@@ -10,7 +10,7 @@ private:
     std::vector<std::string> images;
     int selected_img;
     int selected_algo = 0;
-    float lambda;
+    float lambda = 1.0f;
     float sigma;
     float angle;
     Template_format fmt = Template_format::I;

@@ -34,7 +34,7 @@ void Harmonization::new_template(double angle, Template_format fmt, double width
     new_tmpl.set_image(img_path);
     new_tmpl.rotate(angle);
     new_tmpl.build_graph();
-    new_tmpl.setWidths(width * M_PI);
+    // new_tmpl.setWidths(width * M_PI);
     this->tmpl = new_tmpl;
 }
 

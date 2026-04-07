@@ -11,13 +11,13 @@ class Harmonization
 private:
     Template_format format;
     double angle;
-    double lambda;
+    double lambda = 1.0;
     double sigma;
     std::string img_path;
     Template tmpl;
 
 public:
-    Harmonization(double lambda = 50.0, double sigma = 0.5);
+    Harmonization(double lambda = 1.0, double sigma = 0.5);
 
     
     void compute_best_template(double& angle, Template_format& format);

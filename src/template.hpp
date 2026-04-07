@@ -5,7 +5,7 @@
 #include <vector>
 #include <image.hpp>
 #include <unordered_map>
-const double TEMPLATE_DEFAULT_S_WIDTH = M_PI / 6.0f;
+const double TEMPLATE_DEFAULT_S_WIDTH = 0.33161255787;//M_PI / 6.0f;
 const double TEMPLATE_DEFAULT_M_WIDTH = M_PI / 2.0f;
 const double TEMPLATE_DEFAULT_L_WIDTH = M_PI;
 const double TEMPLATE_DEFAULT_CENTER = 0.0f;
