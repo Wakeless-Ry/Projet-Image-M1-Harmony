@@ -499,6 +499,45 @@ void Template::solve_graph(double lambda) {
         pixel_label[this->graph.non_fixed[i]] = (graph_cut.what_segment(i) == Graph<double,double,double>::SINK) ? 1 : 0;
 }
 
+void Template::find_bad_pixels()
+{
+    const std::vector<Pixel> & pixels = img.get_img();
+    for (int p=0 ; p<pixels.size() ; p++) {}
+
+}
+
+int Template::find_pixel_sector(int p, double h, bool & isInside) const
+{
+    int nb_sectors = get_nbSector();
+    isInside = false;
+
+    int index = -1;
+    for (int sector=0 ; sector<nb_sectors ; sector++)
+        if (isInsideSector(h, sector))
+        { 
+            index = sector;
+            isInside = true;
+            break;
+        }
+    if (!isInside)
+    {
+        int label = pixel_label[p];
+        double target_border = (label == 0) ? gap_left[p] : gap_right[p];
+        for (int sector=0 ; sector<nb_sectors ; sector++)
+        {
+            double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
+            double border_dist = congru(target_border - border_tested);
+            if (border_dist == 0) // !!!!
+            {
+                index = sector;
+                break;
+            }
+        }
+    }
+
+    return index;
+}
+
 // 4.1
 std::vector<Pixel> Template::shift_hues(double sigma_factor) const {
     const auto &pixels = img.get_img();
@@ -515,29 +554,7 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor) const {
         h = congru(h);
         bool isInside = false;
 
-        int index = -1;
-        for (int sector=0 ; sector<nb_sectors ; sector++)
-            if (isInsideSector(h, sector))
-            { 
-                index = sector;
-                isInside = true;
-                break;
-            }
-        if (!isInside)
-        {
-            int label = pixel_label[i];
-            double target_border = (label == 0) ? gap_left[i] : gap_right[i];
-            for (int sector=0 ; sector<nb_sectors ; sector++)
-            {
-                double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
-                double border_dist = congru(target_border - border_tested);
-                if (border_dist == 0)
-                {
-                    index = sector;
-                    break;
-                }
-            }
-        }
+        int index = find_pixel_sector(i, h, isInside);
 
         double C = centers[index];
         double w = widths[index];
@@ -581,29 +598,7 @@ std::vector<Pixel> Template::shift_hues2() const
         pixels[p].toHSV(h, satVec[p], valVec[p]);
         h = congru(h);
         bool isInside = false;
-        int index = -1;
-        for (int sector=0 ; sector<nb_sectors ; sector++)
-            if (isInsideSector(h, sector))
-            { 
-                index = sector;
-                isInside = true;
-                break;
-            }
-        if (!isInside)
-        {
-            int label = pixel_label[p];
-            double target_border = (label == 0) ? gap_left[p] : gap_right[p];
-            for (int sector=0 ; sector<nb_sectors ; sector++)
-            {
-                double border_tested = centers[sector] + (label==0 ? 1 : -1)*widths[sector] / 2.0;
-                double border_dist = congru(target_border - border_tested);
-                if (border_dist == 0) // !!!!!
-                {
-                    index = sector;
-                    break;
-                }
-            }
-        }
+        int index = find_pixel_sector(p, h, isInside);
         
         double C = centers[index];
         double d = congru(C-h);

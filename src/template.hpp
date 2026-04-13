@@ -72,8 +72,11 @@ class Template
 		void solve_graph(double lambda);
 		SharedGraph build_graph();
 		// 4.1
+		int find_pixel_sector(int p, double h, bool & isInside) const;
 		std::vector<Pixel> shift_hues(double sigma_factor = 0.5) const;
 		std::vector<Pixel> shift_hues2() const;
+
+		void find_bad_pixels();
 };
 
 
