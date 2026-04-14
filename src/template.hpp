@@ -21,6 +21,17 @@ struct SharedGraph {
     std::vector<CachedEdge> cached_edges;
 };
 
+struct Voisinage
+{
+	std::vector<int> pos_x;
+	std::vector<int> pos_y;
+	bool has_coeff = false;
+	std::vector<double> coeff;
+
+	Voisinage(unsigned int range);
+	int size();
+};
+
 enum Template_format { i = 0, V = 1, L = 2, I = 3, T = 4, Y = 5, X = 6, t = 7, q = 8 }; // t : triadique, q : quadriadique
 
 class Template
@@ -38,6 +49,11 @@ class Template
 		std::vector<double> gap_right;
 		SharedGraph graph;
 		bool graph_built = false;
+
+		std::vector<unsigned char> demi_sectors;
+		std::vector<double> distances_sectors;
+		bool demi_sec_is_computed = false;
+		std::vector<int> bad_pixels;
 	public:
   		Template(std::vector<double> c = {}, std::vector<double> w = {});
   		Template(double c, double w = TEMPLATE_DEFAULT_S_WIDTH);
@@ -73,10 +89,12 @@ class Template
 		SharedGraph build_graph();
 		// 4.1
 		int find_pixel_sector(int p, double h, bool & isInside) const;
-		std::vector<Pixel> shift_hues(double sigma_factor = 0.5) const;
-		std::vector<Pixel> shift_hues2() const;
+		void compute_demi_sectors();
+		std::vector<Pixel> shift_hues(double sigma_factor = 0.5, bool _blur_bad_pixel = true);
+		std::vector<Pixel> shift_hues2(bool _blur_bad_pixel = true);
 
-		void find_bad_pixels();
+		void find_bad_pixels(double distance_max);
+		void blur_bad_pixels(std::vector<Pixel> & result, int h, int w) const;
 };
 
 

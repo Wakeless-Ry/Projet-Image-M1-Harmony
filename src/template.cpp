@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <stdexcept>
 #include <unordered_map>
+#include <iostream>
 
 Template::Template(std::vector<double> c, std::vector<double> w) : format(Template_format::i)
 {
@@ -106,18 +107,20 @@ double Template::congru(double angle) {
                          : ((rest <= -M_PI) ? (rest + pi2) : rest);
 }
 
-void Template::setWidths(double w) { for (int i=0 ; i<widths.size() ; i++) widths[i] = w; }
+void Template::setWidths(double w) { for (int i=0 ; i<widths.size() ; i++) widths[i] = w; demi_sec_is_computed=false;}
 void Template::setWidths(std::vector<double> w)
 {
     if (widths.size() != w.size())
         throw std::runtime_error("Le nombre de largeurs de secteurs ne doit pas changer !\n");
     for (int i=0 ; i<widths.size() ; i++) widths[i] = w[i];
+    demi_sec_is_computed=false;
 }
 
 void Template::rotate(double angle)
 {
     for (int i = 0; i < centers.size(); i++)
         centers[i] = Template::congru(centers[i] + angle);
+    demi_sec_is_computed=false;
 }
 
 bool Template::isInsideSector(double hue, int n) const {
@@ -143,8 +146,8 @@ double Template::distanceToTemplate(double hue) const {
 
     return min_dist;
 }
-void Template::set_image(std::string path) { this->img.set_path(path); }
-void Template::set_image_v2(std::vector<unsigned char> data_tmp, int height, int width) { this->img = Image(data_tmp, width, height); }
+void Template::set_image(std::string path) { this->img.set_path(path); demi_sec_is_computed=false;}
+void Template::set_image_v2(std::vector<unsigned char> data_tmp, int height, int width) { this->img = Image(data_tmp, width, height); demi_sec_is_computed=false;}
 const std::vector<Pixel> &Template::get_img() const { return this->img.get_img(); }
 // 3.0
 double Template::F() const {
@@ -342,6 +345,7 @@ double Template::e(const std::vector<int> &labels,
 }
 
 void Template::compute_thetas() {
+    demi_sec_is_computed=false;
     const auto &pixels = img.get_img();
     int N = (int)pixels.size();
 
@@ -468,6 +472,7 @@ SharedGraph Template::build_graph()
 
 void Template::solve_graph(double lambda) {
 
+    demi_sec_is_computed=false;
     const auto& pixels = img.get_img();
     int pixel_size = (int)pixels.size();
 
@@ -499,13 +504,24 @@ void Template::solve_graph(double lambda) {
         pixel_label[this->graph.non_fixed[i]] = (graph_cut.what_segment(i) == Graph<double,double,double>::SINK) ? 1 : 0;
 }
 
-void Template::find_bad_pixels()
+
+
+//  VOISINAGE
+
+Voisinage::Voisinage(unsigned int range)
 {
-    const std::vector<Pixel> & pixels = img.get_img();
-    for (int p=0 ; p<pixels.size() ; p++) {}
-
+    pos_x.resize(0);
+    pos_y.resize(0);
+    for (int x=-range ; x<int(range+1) ; x++) for (int y=-range ; y<int(range+1) ; y++) if (x*x+y*y <= int(range*range))
+    {
+        pos_x.push_back(x);
+        pos_y.push_back(y);
+    }
 }
+int Voisinage::size() {return pos_x.size();}
 
+
+// 4.1
 int Template::find_pixel_sector(int p, double h, bool & isInside) const
 {
     int nb_sectors = get_nbSector();
@@ -538,42 +554,126 @@ int Template::find_pixel_sector(int p, double h, bool & isInside) const
     return index;
 }
 
-// 4.1
-std::vector<Pixel> Template::shift_hues(double sigma_factor) const {
+void Template::compute_demi_sectors()
+{
+    const std::vector<Pixel> & pixels = img.get_img();
+    if (!demi_sec_is_computed)
+    {
+        demi_sectors.resize(pixels.size());
+        distances_sectors.resize(pixels.size());
+        for (int p=0 ; p<pixels.size() ; p++)
+        {
+            double h, s, v;
+            pixels[p].toHSV(h, s, v);
+            h = congru(h);
+            bool isInside = false;
+            int index = find_pixel_sector(p, h, isInside);
+            double C = centers[index];
+            double d = congru(C-h);
+            char demi = (get_nbSector()==1 && !isInside) ? (pixel_label[p]==0 ? 0 : 1) : (d<0 ? 0 : 1);
+            d = isInside ? abs(d) : ((pixel_label[p]==0 ? 1.0 : -1.0) * (h-C));
+            d += d>0 ? 0.0 : M_PI * 2.0;
+            demi_sectors[p] = 2*index+demi;
+            distances_sectors[p] = d;
+        }
+        demi_sec_is_computed = true;
+    }
+}
+
+void Template::find_bad_pixels(double distance_max)
+{
+    const std::vector<Pixel> & pixels = img.get_img();
+    int h = img.get_height();
+    int w = img.get_width();
+    compute_demi_sectors();
+    bad_pixels.resize(0);
+    std::vector<std::vector<int>> voisinage = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
+
+    for (int x=0 ; x<w ; x++) for (int y=0 ; y<h ; y++)
+    {
+        int p = y*w+x;
+        bool is_ok = true;
+        for (int v=0 ; v<voisinage.size() ; v++)
+        {
+            int pv = std::clamp(y+voisinage[v][1], 0, h-1)*w + std::clamp(x+voisinage[v][0], 0, w-1);
+            double dist2 = pow(pixels[p].r-pixels[pv].r, 2) + pow(pixels[p].g-pixels[pv].g, 2) + pow(pixels[p].b-pixels[pv].b, 2);
+            is_ok = is_ok && ((demi_sectors[pv] == demi_sectors[p]) || (dist2 > distance_max*distance_max));
+        }
+        if (!is_ok) bad_pixels.push_back(p);
+    }
+}
+
+void Template::blur_bad_pixels(std::vector<Pixel> & result, int h, int w) const
+{
+    std::vector<Pixel> buff;
+    buff.resize(result.size());
+    for (int p=0 ; p<result.size() ; p++) buff[p] = Pixel(result[p].r, result[p].g, result[p].b);
+    Voisinage vois(5);
+    
+    for (int pp=0 ; pp<bad_pixels.size() ; pp++)
+    {
+        int p = bad_pixels[pp];
+        int y = p/w;
+        int x = p%w;
+        for (int v=0 ; v<vois.size() ; v++)
+        {
+            int pv = std::clamp(y+vois.pos_y[v], 0, h-1)*w + std::clamp(x+vois.pos_x[v], 0, w-1);
+            int sumR = 0;
+            int sumG = 0;
+            int sumB = 0;
+            int yv = pv/w;
+            int xv = pv%w;
+            for (int vv=0 ; vv<vois.size() ; vv++)
+            {
+                int pvv = std::clamp(yv+vois.pos_y[vv], 0, h-1)*w + std::clamp(xv+vois.pos_x[vv], 0, w-1);
+                sumR += buff[pvv].r;
+                sumG += buff[pvv].g;
+                sumB += buff[pvv].b;
+            }
+            result[pv].r = sumR/vois.size();
+            result[pv].g = sumG/vois.size();
+            result[pv].b = sumB/vois.size();
+        }
+    }
+}
+
+std::vector<Pixel> Template::shift_hues(double sigma_factor, bool _blur_bad_pixel) {
     const auto &pixels = img.get_img();
     int nb_pixels = pixels.size();
     std::vector<Pixel> result;
     int nb_sectors = get_nbSector();
     result.reserve(nb_pixels);
-    const double pi2 = M_PI * 2.0;
+    compute_demi_sectors();
 
-    for (int i=0 ; i<nb_pixels ; i++)
+    for (int p=0 ; p<nb_pixels ; p++)
     {
         double h, s, v;
-        pixels[i].toHSV(h, s, v);
+        pixels[p].toHSV(h, s, v);
         h = congru(h);
-        bool isInside = false;
 
-        int index = find_pixel_sector(i, h, isInside);
-
+        int index = demi_sectors[p]/2;
         double C = centers[index];
         double w = widths[index];
         double sigma = sigma_factor * w;
-        double d = congru(C-h);
-        double sens = (nb_sectors==1 && !isInside) ? (pixel_label[i]==0 ? 1.0 : -1.0) : (d<0 ? 1.0 : -1.0);
-        d = isInside ? abs(d) : ((pixel_label[i]==0 ? 1.0 : -1.0) * (h-C));
-        d += d>0 ? 0 : pi2;
+        double d = distances_sectors[p];
+        double sens = (demi_sectors[p]%2 == 0) ? 1.0 : -1.0;
+
         double gauss = exp(-d*d / (sigma*sigma*2.0));
         double h2 = congru(C + sens * (w / 2.0) * (1.0 - gauss));
-        h2 += h2>0 ? 0 : pi2;
-
+        h2 += h2>0 ? 0 : M_PI*2.0;
         result.push_back(Pixel::toRGB(h2, s, v));
+    }
+
+    if (_blur_bad_pixel)
+    {
+        find_bad_pixels(3.0);
+        blur_bad_pixels(result, img.get_height(), img.get_width());
     }
 
     return result;
 }
 
-std::vector<Pixel> Template::shift_hues2() const
+std::vector<Pixel> Template::shift_hues2(bool _blur_bad_pixel)
 {
     const std::vector<Pixel> & pixels = img.get_img();
     std::vector<Pixel> result;
@@ -582,33 +682,8 @@ std::vector<Pixel> Template::shift_hues2() const
     std::vector<std::vector<int>> pixelIndexPerSector;
     pixelIndexPerSector.resize(nb_sectors*2);
     for (int i=0 ; i<pixelIndexPerSector.size() ; i++) pixelIndexPerSector[i].resize(0);
-    std::vector<double> distances;
-    distances.resize(pixels.size());
-    std::vector<int> sensVec;
-    sensVec.resize(pixels.size());
-    std::vector<double> satVec;
-    satVec.resize(pixels.size());
-    std::vector<double> valVec;
-    valVec.resize(pixels.size());
-    const double pi2 = M_PI*2.0;
-
-    for (int p=0 ; p<pixels.size() ; p++)
-    {
-        double h;
-        pixels[p].toHSV(h, satVec[p], valVec[p]);
-        h = congru(h);
-        bool isInside = false;
-        int index = find_pixel_sector(p, h, isInside);
-        
-        double C = centers[index];
-        double d = congru(C-h);
-        double sens = (nb_sectors==1 && !isInside) ? (pixel_label[p]==0 ? 1.0 : -1.0) : (d<0 ? 1.0 : -1.0);
-        d = isInside ? abs(d) : ((pixel_label[p]==0 ? 1.0 : -1.0) * (h-C));
-        d += d>0 ? 0.0 : pi2;
-        pixelIndexPerSector[2*index + (sens==1.0 ? 0 : 1)].push_back(p);
-        distances[p] = d;
-        sensVec[p] = sens;
-    }
+    compute_demi_sectors();
+    for (int p=0 ; p<pixels.size() ; p++) {pixelIndexPerSector[demi_sectors[p]].push_back(p);}
 
     for (int sector=0 ; sector<nb_sectors ; sector++) for (int sensI=0 ; sensI<2 ; sensI++)
     {
@@ -617,13 +692,13 @@ std::vector<Pixel> Template::shift_hues2() const
         double distMax = 0;
         if (pixelIndexPerSector[demiSector].size() != 0)
         {
-            distMin = distances[pixelIndexPerSector[demiSector][0]];
-            distMax = distances[pixelIndexPerSector[demiSector][0]];
+            distMin = distances_sectors[pixelIndexPerSector[demiSector][0]];
+            distMax = distances_sectors[pixelIndexPerSector[demiSector][0]];
         }
         for (int p=1 ; p<pixelIndexPerSector[demiSector].size() ; p++)
         {
-            distMin = std::min(distMin, distances[pixelIndexPerSector[demiSector][p]]);
-            distMax = std::max(distMax, distances[pixelIndexPerSector[demiSector][p]]);
+            distMin = std::min(distMin, distances_sectors[pixelIndexPerSector[demiSector][p]]);
+            distMax = std::max(distMax, distances_sectors[pixelIndexPerSector[demiSector][p]]);
         }
         if (distMax-distMin != 0)
         {
@@ -631,19 +706,30 @@ std::vector<Pixel> Template::shift_hues2() const
             for (int pp=0 ; pp<pixelIndexPerSector[demiSector].size() ; pp++)
             {
                 int p = pixelIndexPerSector[demiSector][pp];
-                double newDist = (distances[p] - distMin) * ratio;
-                double h2 = congru(centers[sector] + sensVec[p] * newDist);
-                h2 += h2>0 ? 0 : pi2;
-                result[p] = Pixel::toRGB(h2, satVec[p], valVec[p]);
+                double newDist = (distances_sectors[p] - distMin) * ratio;
+                double sens = (sensI%2 == 0) ? 1.0 : -1.0;
+                double h2 = congru(centers[sector] + sens * newDist);
+                h2 += h2>0 ? 0 : M_PI*2.0;
+                double h, s, v;
+                pixels[p].toHSV(h, s, v);
+                result[p] = Pixel::toRGB(h2, s, v);
             }
         }
         else for (int pp=0 ; pp<pixelIndexPerSector[demiSector].size() ; pp++)
         {
             int p = pixelIndexPerSector[demiSector][pp];
             double h2 = congru(centers[sector]);
-            h2 += h2>0 ? 0 : pi2;
-            result[p] = Pixel::toRGB(h2, satVec[p], valVec[p]);
+            h2 += h2>0 ? 0 : M_PI*2.0;
+            double h, s, v;
+            pixels[p].toHSV(h, s, v);
+            result[p] = Pixel::toRGB(h2, s, v);
         }
+    }
+
+    if (_blur_bad_pixel)
+    {
+        find_bad_pixels(3.0);
+        blur_bad_pixels(result, img.get_height(), img.get_width());
     }
 
     return result;
