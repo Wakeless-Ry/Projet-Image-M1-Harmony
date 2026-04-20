@@ -608,7 +608,7 @@ void Template::blur_bad_pixels(std::vector<Pixel> & result, int h, int w) const
     std::vector<Pixel> buff;
     buff.resize(result.size());
     for (int p=0 ; p<result.size() ; p++) buff[p] = Pixel(result[p].r, result[p].g, result[p].b);
-    Voisinage vois(5);
+    Voisinage vois(3);
     
     for (int pp=0 ; pp<bad_pixels.size() ; pp++)
     {
@@ -637,7 +637,7 @@ void Template::blur_bad_pixels(std::vector<Pixel> & result, int h, int w) const
     }
 }
 
-std::vector<Pixel> Template::shift_hues(double sigma_factor, bool _blur_bad_pixel) {
+std::vector<Pixel> Template::shift_hues(double sigma_factor, bool _blur_bad_pixel, bool test_bad_pixel) {
     const auto &pixels = img.get_img();
     int nb_pixels = pixels.size();
     std::vector<Pixel> result;
@@ -664,16 +664,22 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor, bool _blur_bad_pixe
         result.push_back(Pixel::toRGB(h2, s, v));
     }
 
+    if (_blur_bad_pixel || test_bad_pixel)
+        find_bad_pixels(8.0);
     if (_blur_bad_pixel)
-    {
-        find_bad_pixels(3.0);
         blur_bad_pixels(result, img.get_height(), img.get_width());
+    if (test_bad_pixel) for (int i=0 ; i<bad_pixels.size() ; i++)
+    {
+        int p = bad_pixels[i];
+        double h, s, v;
+        pixels[p].toHSV(h, s, v);
+        if (s>0.1) result[p] = Pixel(0, 0, 0);
     }
 
     return result;
 }
 
-std::vector<Pixel> Template::shift_hues2(bool _blur_bad_pixel)
+std::vector<Pixel> Template::shift_hues2(bool _blur_bad_pixel, bool test_bad_pixel)
 {
     const std::vector<Pixel> & pixels = img.get_img();
     std::vector<Pixel> result;
@@ -726,10 +732,16 @@ std::vector<Pixel> Template::shift_hues2(bool _blur_bad_pixel)
         }
     }
 
+    if (_blur_bad_pixel || test_bad_pixel)
+        find_bad_pixels(8.0);
     if (_blur_bad_pixel)
-    {
-        find_bad_pixels(3.0);
         blur_bad_pixels(result, img.get_height(), img.get_width());
+    if (test_bad_pixel) for (int i=0 ; i<bad_pixels.size() ; i++)
+    {
+        int p = bad_pixels[i];
+        double h, s, v;
+        pixels[p].toHSV(h, s, v);
+        if (s>0.1) result[p] = Pixel(0, 0, 0);
     }
 
     return result;

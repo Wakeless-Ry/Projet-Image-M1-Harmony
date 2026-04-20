@@ -90,8 +90,8 @@ class Template
 		// 4.1
 		int find_pixel_sector(int p, double h, bool & isInside) const;
 		void compute_demi_sectors();
-		std::vector<Pixel> shift_hues(double sigma_factor = 0.5, bool _blur_bad_pixel = true);
-		std::vector<Pixel> shift_hues2(bool _blur_bad_pixel = true);
+		std::vector<Pixel> shift_hues(double sigma_factor = 0.5, bool _blur_bad_pixel = true, bool test_bad_pixel = false);
+		std::vector<Pixel> shift_hues2(bool _blur_bad_pixel = false, bool test_bad_pixel = true);
 
 		void find_bad_pixels(double distance_max);
 		void blur_bad_pixels(std::vector<Pixel> & result, int h, int w) const;
