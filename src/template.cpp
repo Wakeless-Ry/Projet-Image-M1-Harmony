@@ -599,7 +599,12 @@ void Template::find_bad_pixels(double distance_max)
             double dist2 = pow(pixels[p].r-pixels[pv].r, 2) + pow(pixels[p].g-pixels[pv].g, 2) + pow(pixels[p].b-pixels[pv].b, 2);
             is_ok = is_ok && ((demi_sectors[pv] == demi_sectors[p]) || (dist2 > distance_max*distance_max));
         }
-        if (!is_ok) bad_pixels.push_back(p);
+        if (!is_ok) 
+        {
+            double _h, _s, _v;
+            pixels[p].toHSV(_h, _s, _v);
+            if (_s>0.1) bad_pixels.push_back(p);
+        }
     }
 }
 
@@ -667,13 +672,13 @@ std::vector<Pixel> Template::shift_hues(double sigma_factor, bool _blur_bad_pixe
     if (_blur_bad_pixel || test_bad_pixel)
         find_bad_pixels(8.0);
     if (_blur_bad_pixel)
+    {
         blur_bad_pixels(result, img.get_height(), img.get_width());
+    }
     if (test_bad_pixel) for (int i=0 ; i<bad_pixels.size() ; i++)
     {
         int p = bad_pixels[i];
-        double h, s, v;
-        pixels[p].toHSV(h, s, v);
-        if (s>0.1) result[p] = Pixel(0, 0, 0);
+        result[p] = Pixel(0, 0, 0);
     }
 
     return result;
@@ -739,9 +744,7 @@ std::vector<Pixel> Template::shift_hues2(bool _blur_bad_pixel, bool test_bad_pix
     if (test_bad_pixel) for (int i=0 ; i<bad_pixels.size() ; i++)
     {
         int p = bad_pixels[i];
-        double h, s, v;
-        pixels[p].toHSV(h, s, v);
-        if (s>0.1) result[p] = Pixel(0, 0, 0);
+        result[p] = Pixel(0, 0, 0);
     }
 
     return result;
